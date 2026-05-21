@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#070A0F">
+<meta name="color-scheme" content="dark">
+<title>服务内容 · Darben</title>
+<style>
+:root { --bg-deep:#05080f; --bg-card:rgba(10,17,30,0.78); --text:#d8e0ea; --text-bright:#eaf0f6; --text-dim:#8899aa; --muted:#5a6e80; --accent:#7ec8e3; --line:rgba(90,110,128,0.10); --mono:"SF Mono","Menlo","Consolas",monospace; }
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+html { background:var(--bg-deep); color:var(--text); font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif; -webkit-font-smoothing:antialiased; }
+body { background:var(--bg-deep); overflow-x:hidden; }
+a { color:var(--accent); text-decoration:none; }
+::selection { background:var(--accent); color:var(--bg-deep); }
+
+.bg-abyss { position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(ellipse 80% 60% at 50% 30%, rgba(126,200,227,0.04) 0%, transparent 55%),radial-gradient(ellipse 60% 50% at 50% 70%, rgba(42,96,136,0.03) 0%, transparent 50%),var(--bg-deep); }
+.bg-ornament { position:fixed; z-index:0; pointer-events:none; }
+.bg-ornament.tl { top:-80px; left:-60px; width:260px; height:260px; border:1px solid rgba(126,200,227,0.04); border-radius:50%; }
+.bg-ornament.br { bottom:-80px; right:-60px; width:300px; height:300px; border:1px solid rgba(126,200,227,0.03); border-radius:50%; }
+.bg-geo { position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.025; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Ccircle cx='50' cy='50' r='48' fill='none' stroke='%237ec8e3' stroke-width='0.5'/%3E%3C/svg%3E"); background-size:100px 100px; }
+.bg-grid { position:fixed; inset:0; z-index:0; pointer-events:none; background-image:linear-gradient(rgba(126,200,227,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(126,200,227,0.015) 1px, transparent 1px); background-size:64px 64px; mask-image:radial-gradient(ellipse at center, #000 20%, transparent 72%); -webkit-mask-image:radial-gradient(ellipse at center, #000 20%, transparent 72%); }
+.bg-glow { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:700px; height:500px; pointer-events:none; z-index:0; background:radial-gradient(ellipse, rgba(126,200,227,0.045) 0%, transparent 65%); }
+.bg-spark { position:fixed; pointer-events:none; z-index:0; width:2px; height:2px; border-radius:50%; background:var(--accent); animation:sparkFloat 3.5s ease-in-out infinite; }
+.bg-spark.s1 { top:16%; left:14%; animation-delay:0s; }
+.bg-spark.s2 { top:72%; right:12%; animation-delay:1.3s; }
+.bg-spark.s3 { bottom:22%; left:22%; animation-delay:2.3s; }
+.bg-spark.s4 { top:34%; right:24%; animation-delay:0.7s; }
+@keyframes sparkFloat { 0%,100%{opacity:.05;transform:scale(1)} 50%{opacity:.32;transform:scale(2.8)} }
+#particle-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+#ripple-canvas { position:fixed; inset:0; z-index:9990; pointer-events:none; }
+
+nav { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(5,8,15,0.78); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid var(--line); }
+.nav-inner { max-width:720px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 20px; }
+.nav-brand { font-size:13px; font-weight:700; color:var(--accent); letter-spacing:.08em; }
+.nav-back { font-size:13px; color:var(--text-dim); transition:color .2s; display:flex; align-items:center; gap:6px; } .nav-back:hover { color:var(--accent); }
+
+main { position:relative; z-index:10; max-width:720px; margin:0 auto; padding:80px 24px 80px; }
+.page-title { font-size:22px; font-weight:700; color:var(--text-bright); margin-bottom:8px; letter-spacing:.04em; }
+.page-sub { font-size:14px; color:var(--text-dim); margin-bottom:36px; }
+
+.service-list { display:flex; flex-direction:column; gap:12px; }
+.service-block {
+  background:var(--bg-card); border:1px solid var(--line); border-radius:14px;
+  padding:28px 28px 24px;
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+  transition:border-color .35s ease, transform .35s ease;
+}
+.service-block:hover { border-color:rgba(126,200,227,0.2); transform:translateY(-2px); }
+.service-block .block-header { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.service-block .block-icon { width:40px; height:40px; flex-shrink:0; }
+.service-block .block-icon svg { width:100%; height:100%; }
+.service-block h3 { font-size:17px; font-weight:700; color:var(--text-bright); }
+.service-block .block-desc { font-size:13px; color:var(--text-dim); line-height:1.6; margin-bottom:16px; }
+.service-block .sub-items { display:flex; flex-wrap:wrap; gap:8px; }
+.service-block .sub-item { font-size:12px; padding:5px 14px; border:1px solid var(--line); border-radius:100px; color:var(--text-dim); background:rgba(126,200,227,0.02); }
+
+.back-link { display:inline-flex; align-items:center; gap:6px; margin-top:40px; padding:8px 18px; border:1px solid var(--line); border-radius:100px; font-size:13px; color:var(--muted); transition:.25s; }
+.back-link:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+.back-link svg { width:14px; height:14px; }
+
+@media (max-width:560px) { main { padding:80px 16px 60px; } .service-block { padding:22px 20px 20px; } .bg-spark.s3,.bg-spark.s4{display:none} .bg-glow{opacity:.6;width:500px;height:350px} .bg-grid{background-size:48px 48px} .bg-ornament.tl{width:180px;height:180px;top:-60px;left:-60px} .bg-ornament.br{width:200px;height:200px;bottom:-60px;right:-50px} .block-header{gap:10px} .block-icon{width:32px;height:32px} }
+
+.page-transition { position:fixed; inset:0; z-index:9999; pointer-events:none; }
+.page-transition .reveal { position:absolute; inset:0; background:var(--bg-deep); transform:scaleY(1); transform-origin:top; transition:transform .5s cubic-bezier(.76,0,.24,1); }
+.page-transition.out .reveal { transform:scaleY(0); transform-origin:bottom; }
+</style>
+</head>
+<body>
+<div class="bg-abyss"></div>
+<div class="bg-ornament tl"></div>
+<div class="bg-ornament br"></div>
+<div class="bg-geo"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-spark s1"></div>
+<div class="bg-spark s2"></div>
+<div class="bg-spark s3"></div>
+<div class="bg-spark s4"></div>
+<canvas id="particle-canvas"></canvas><canvas id="ripple-canvas"></canvas>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-brand">DARBEN</a>
+    <a href="../modules/index.html" class="nav-back" data-transition>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      返回
+    </a>
+  </div>
+</nav>
+
+<main>
+  <h1 class="page-title">服务内容</h1>
+  <p class="page-sub">用工具生成创意，用作品替代空谈</p>
+
+  <div class="service-list">
+
+    <div class="service-block">
+      <div class="block-header">
+        <div class="block-icon">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="4" y="8" width="32" height="24" rx="2" stroke="#7ec8e3" stroke-width="1.2"/><circle cx="14" cy="18" r="3" stroke="#7ec8e3" stroke-width="1"/><path d="M4 28l10-8 6 5 16-10v9" stroke="#7ec8e3" stroke-width="1"/></svg>
+        </div>
+        <h3>图片生成</h3>
+      </div>
+      <p class="block-desc">AI 驱动的视觉内容创作——从概念草图到高精度成图，覆盖多种风格与场景需求。</p>
+      <div class="sub-items">
+        <span class="sub-item">AI 写真/头像</span>
+        <span class="sub-item">场景概念图</span>
+        <span class="sub-item">品牌视觉素材</span>
+        <span class="sub-item">风格化插图</span>
+      </div>
+    </div>
+
+    <div class="service-block">
+      <div class="block-header">
+        <div class="block-icon">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="3" y="6" width="34" height="24" rx="2" stroke="#7ec8e3" stroke-width="1.2"/><path d="M3 10h34" stroke="#7ec8e3" stroke-width="1"/><circle cx="8" cy="9" r="1.2" fill="#7ec8e3"/><circle cx="12" cy="9" r="1.2" fill="#7ec8e3"/><circle cx="16" cy="9" r="1.2" fill="#7ec8e3"/><path d="M12 22h16M12 26h10" stroke="#7ec8e3" stroke-width="1" opacity="0.5"/></svg>
+        </div>
+        <h3>网页生成</h3>
+      </div>
+      <p class="block-desc">从零构建完整网页——个人主页、品牌落地页、作品展示站，纯代码实现，零依赖优先，极致性能。</p>
+      <div class="sub-items">
+        <span class="sub-item">个人名片页</span>
+        <span class="sub-item">品牌官网</span>
+        <span class="sub-item">作品集网站</span>
+        <span class="sub-item">动态视觉页</span>
+      </div>
+    </div>
+
+    <div class="service-block">
+      <div class="block-header">
+        <div class="block-icon">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="4" y="6" width="32" height="28" rx="3" stroke="#7ec8e3" stroke-width="1.2"/><polygon points="16,12 16,28 28,20" stroke="#7ec8e3" stroke-width="1.2" fill="rgba(126,200,227,0.08)"/></svg>
+        </div>
+        <h3>视频生成</h3>
+      </div>
+      <p class="block-desc">AI 辅助视频创作——从脚本构思到视觉输出，涵盖宣传短片、动态展示、叙事型视频内容。</p>
+      <div class="sub-items">
+        <span class="sub-item">品牌宣传短片</span>
+        <span class="sub-item">动态视觉叙事</span>
+        <span class="sub-item">视频背景页</span>
+        <span class="sub-item">AI 动画生成</span>
+      </div>
+    </div>
+
+  </div>
+
+  <a href="../modules/index.html" class="back-link" data-transition>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    返回模块
+  </a>
+</main>
+
+<div class="page-transition out" id="transition"><div class="reveal"></div></div>
+
+<script>
+(function(){
+  const canvas=document.getElementById('particle-canvas'),ctx=canvas.getContext('2d');
+  const pchars=['潜','渡','深','海','服','务','创','意','工','具','生','成','视','觉'];
+  let pts=[],w,h,N=36;
+  function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;}
+  function init(){pts=[];for(let i=0;i<N;i++){const isC=Math.random()<.25;pts.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.2+.3,vx:(Math.random()-.5)*.09,vy:(Math.random()-.5)*.09-.05,o:Math.random()*.28+.04,p:Math.random()*Math.PI*2,ch:isC?pchars[Math.floor(Math.random()*pchars.length)]:'',cs:11+Math.random()*16,isC});}}
+  function draw(){ctx.clearRect(0,0,w,h);
+    for(let i=0;i<pts.length;i++){for(let j=i+1;j<pts.length;j++){const a=pts[i],b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);if(d<110){ctx.strokeStyle=`rgba(126,200,227,${(1-d/110)*.035})`;ctx.lineWidth=.5;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}}
+    for(const p of pts){p.x+=p.vx;p.y+=p.vy;p.p+=.005;if(p.x<-40)p.x=w+40;if(p.x>w+40)p.x=-40;if(p.y<-40)p.y=h+40;if(p.y>h+40)p.y=-40;const a=p.o+Math.sin(p.p)*.09;
+      if(p.isC){ctx.font=`300 ${p.cs}px "Noto Serif SC","Songti SC",serif`;ctx.fillStyle=`rgba(126,200,227,${Math.max(.018,a*1.2)})`;ctx.fillText(p.ch,p.x,p.y);}
+      else{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(126,200,227,${Math.max(.018,a)})`;ctx.fill();}}
+    requestAnimationFrame(draw);}
+  resize();init();draw();window.addEventListener('resize',()=>{resize();init();});
+
+  // Scroll reveal
+  const reveals=document.querySelectorAll('.service-block');
+  const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';obs.unobserve(e.target);}});},{threshold:.08,rootMargin:'0px 0px -30px 0px'});
+  reveals.forEach((el,i)=>{el.style.opacity='0';el.style.transform='translateY(28px)';el.style.transition=`opacity .7s ${i*.07}s cubic-bezier(.22,.61,.36,1), transform .7s ${i*.07}s cubic-bezier(.22,.61,.36,1)`;obs.observe(el);});
+
+  // Ripple
+  const rc=document.getElementById('ripple-canvas'),rctx=rc.getContext('2d');let rps=[],rw,rh;
+  function resizeRipple(){rw=rc.width=window.innerWidth;rh=rc.height=window.innerHeight;}
+  resizeRipple();window.addEventListener('resize',resizeRipple);
+  function createRipple(x,y){const n=performance.now();for(let i=0;i<2;i++)rps.push({x,y,r:0,mr:50+i*30,a:.4-i*.15,s:n+i*40,d:400-i*30});}
+  function drawRips(n){rctx.clearRect(0,0,rw,rh);rps=rps.filter(r=>{const e=n-r.s;if(e<0)return true;const p=e/r.d;if(p>=1)return false;r.r=r.mr*p;rctx.strokeStyle=`rgba(126,200,227,${r.a*(1-p)})`;rctx.lineWidth=1.2*(1-p);rctx.beginPath();rctx.arc(r.x,r.y,r.r,0,Math.PI*2);rctx.stroke();return true});requestAnimationFrame(drawRips)}
+  requestAnimationFrame(drawRips);
+
+  const transition=document.getElementById('transition');
+  document.querySelectorAll('a[data-transition]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      e.preventDefault();
+      const href=a.getAttribute('href');
+      const rect=a.getBoundingClientRect();
+      createRipple(rect.left+rect.width/2,rect.top+rect.height/2);
+      transition.classList.remove('out');
+      setTimeout(()=>{window.location=href;},500);
+    });
+  });
+})();
+</script>
+</body>
+</html>

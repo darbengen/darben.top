@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#070A0F">
+<meta name="color-scheme" content="dark">
+<title>家齐 · Darben</title>
+<meta name="description" content="家齐 / Darben — 创作者、写作者、AI 工具构建者。探索心智，构建工具。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23070A0F'/><text x='16' y='23' font-family='serif' font-size='20' font-weight='bold' fill='%237ec8e3' text-anchor='middle'>D</text></svg>">
+<meta property="og:title" content="家齐 · Darben">
+<meta property="og:description" content="创作者、写作者、AI 工具构建者。探索心智，构建工具。">
+<meta property="og:url" content="https://darben.top">
+<meta property="og:type" content="website">
+<style>
+:root {
+  --bg-deep:    #070A0F;
+  --bg-card:    rgba(12,18,28,0.72);
+  --bg-card2:   rgba(14,20,32,0.80);
+  --text:       #d8e0ea;
+  --text-bright:#eaf0f6;
+  --text-dim:   #8899aa;
+  --muted:      #5a6e80;
+  --accent:     #7ec8e3;
+  --accent-dim: #2a6088;
+  --line:       rgba(90,110,128,0.10);
+  --line-solid: rgba(90,110,128,0.16);
+  --serif:      "Noto Serif SC","Songti SC",Georgia,serif;
+  --mono:       "SF Mono","Menlo","Consolas",monospace;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html {
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  scroll-behavior: smooth;
+}
+body { background: var(--bg-deep); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::selection { background: var(--accent); color: var(--bg-deep); }
+
+/* ── Film grain overlay ── */
+.grain {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .035;
+}
+.grain::after {
+  content: "";
+  position: fixed; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  animation: grain .5s steps(5, end) infinite;
+}
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-1%, -1%); }
+  40% { transform: translate(1%, 1%); }
+  60% { transform: translate(-1%, 1%); }
+  80% { transform: translate(1%, -1%); }
+}
+
+/* ── Radial vignette ── */
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(7,10,15,.55) 100%);
+}
+
+/* ── Progress bar ── */
+#progress {
+  position: fixed; top: 0; left: 0; height: 1px; z-index: 200;
+  background: var(--accent);
+  transition: width .1s linear;
+}
+
+.bg-abyss {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(126,200,227,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 50% 80%, rgba(42,96,136,0.03) 0%, transparent 50%),
+    var(--bg-deep);
+}
+#particle-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(7,10,15,0.78);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  max-width: 680px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 52px; padding: 0 20px;
+}
+.nav-brand { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .08em; }
+.nav-links { display: flex; gap: 4px; }
+.nav-links a {
+  padding: 6px 12px; border-radius: 6px; color: var(--text-dim);
+  font-size: 13px; transition: .2s ease;
+}
+.nav-links a:hover { background: rgba(126,200,227,0.06); color: var(--text-bright); text-decoration: none; }
+.live-dot {
+  display: inline-block; width: 5px; height: 5px; background: var(--accent);
+  border-radius: 50%; margin-right: 5px; vertical-align: middle;
+  animation: live-blink 1.1s step-end infinite;
+}
+@keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* ── Content ── */
+main { position: relative; z-index: 10; padding: 80px 24px 0; }
+.section { padding: 90px 0; }
+.section + .section { border-top: 1px solid var(--line); }
+.section-inner { max-width: 640px; margin: 0 auto; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  letter-spacing: .08em; margin-bottom: 12px;
+  font-family: var(--mono);
+  display: flex; align-items: center; gap: 12px;
+}
+.section-eyebrow::before {
+  content: "";
+  width: 28px; height: 1px; background: var(--muted);
+}
+.section-title {
+  font-size: 22px; font-weight: 700; color: var(--text-bright);
+  letter-spacing: .02em; margin-bottom: 16px; line-height: 1.4;
+}
+.section-body { font-size: 14px; color: var(--text-dim); line-height: 1.85; }
+.section-body p + p { margin-top: 12px; }
+
+/* ── Draw rule ── */
+.draw-rule {
+  border: 0; height: 1px; background: var(--line);
+  margin: 36px 0;
+  transform: scaleX(0);
+  transition: transform 1.2s cubic-bezier(.22,1,.36,1);
+  transform-origin: left;
+}
+.draw-rule.on { transform: scaleX(1); }
+
+/* ── Scroll reveal ── */
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .9s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1);
+}
+.reveal.on { opacity: 1; transform: none; }
+.reveal.d1 { transition-delay: .06s; } .reveal.d2 { transition-delay: .14s; }
+.reveal.d3 { transition-delay: .22s; } .reveal.d4 { transition-delay: .30s; }
+.reveal.d5 { transition-delay: .38s; } .reveal.d6 { transition-delay: .46s; }
+
+/* ── Focus Cards ── */
+.focus-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+.focus-card {
+  background: var(--bg-card2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  cursor: default;
+  transition: transform .3s cubic-bezier(.22,.61,.36,1), border-color .3s ease, background .3s ease;
+}
+.focus-card:hover { border-color: var(--accent-dim); background: rgba(126,200,227,0.04); transform: translateY(-2px); }
+.focus-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent-dim);
+  color: var(--accent);
+  margin-bottom: 12px;
+  font-weight: 700; font-size: 14px;
+}
+.focus-card b { display: block; font-size: 15px; color: var(--text-bright); margin-bottom: 4px; }
+.focus-card p { font-size: 12px; color: var(--text-dim); line-height: 1.6; }
+.focus-now {
+  margin-top: 14px;
+  padding: 14px 18px;
+  background: rgba(126,200,227,0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px; color: var(--muted);
+}
+.focus-now span { color: var(--accent); }
+
+/* ── QR Box ── */
+.qr-box {
+  margin-top: 24px;
+  background: var(--bg-card2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 22px;
+  display: flex; gap: 18px; align-items: center;
+}
+.qr-box img { width: 120px; height: 120px; border-radius: 10px; }
+.qr-info b { display: block; font-size: 16px; color: var(--text-bright); margin-bottom: 2px; }
+.qr-info small { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.qr-info p { font-size: 12px; color: var(--text-dim); }
+
+/* ── Role Grid ── */
+.role-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px; }
+.role {
+  padding: 14px 16px;
+  background: var(--bg-card2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px; color: var(--text-dim);
+  transition: border-color .3s ease, background .3s ease;
+}
+.role:hover { border-color: var(--accent-dim); background: rgba(126,200,227,0.04); }
+
+/* ── Link Cards ── */
+.link-cards { display: grid; gap: 10px; margin-top: 20px; }
+.link-card {
+  display: block;
+  background: var(--bg-card2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px 20px;
+  transition: transform .3s cubic-bezier(.22,.61,.36,1), border-color .3s ease, background .3s ease;
+}
+.link-card:hover { border-color: var(--accent-dim); background: rgba(126,200,227,0.04); transform: translateY(-2px); text-decoration: none; }
+.link-card h3 { font-size: 15px; font-weight: 600; color: var(--text-bright); margin-bottom: 4px; }
+.link-card p { font-size: 13px; color: var(--text-dim); }
+
+/* ── Contact Card ── */
+.contact-card {
+  background: var(--bg-card2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 28px;
+  margin-top: 20px;
+  position: relative;
+}
+.contact-card::before {
+  content: "CONTACT v1.0";
+  position: absolute; top: -1px; left: 20px;
+  background: var(--bg-deep);
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: .2em;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+/* ── Back ── */
+.back-top {
+  display: block; width: fit-content;
+  margin: 60px auto;
+  padding: 8px 18px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  font-size: 13px; color: var(--muted);
+  transition: .2s ease;
+}
+.back-top:hover { border-color: var(--accent-dim); color: var(--accent); text-decoration: none; }
+
+/* ── Footer ── */
+footer {
+  position: relative; z-index: 10;
+  padding: 36px 24px; border-top: 1px solid var(--line);
+}
+.foot-inner {
+  max-width: 640px; margin: 0 auto;
+  display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+  font-size: 13px; color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  main { padding: 72px 16px 0; }
+  .section { padding: 60px 0; }
+  .section-title { font-size: 20px; }
+  .focus-grid, .role-grid { grid-template-columns: 1fr; }
+  .qr-box { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-abyss"></div>
+<div class="grain"></div>
+<div id="progress"></div>
+<canvas id="particle-canvas"></canvas>
+
+<nav>
+  <div class="nav-inner">
+    <a href="../index.html" class="nav-brand"><span class="live-dot"></span>DARBEN</a>
+    <div class="nav-links">
+      <a href="#about">关于</a>
+      <a href="#works">作品</a>
+      <a href="../blog/index.html">博客</a>
+      <a href="#contact">联系</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ════ ABOUT ════ -->
+  <section class="section" id="about">
+    <div class="section-inner">
+      <div class="section-eyebrow reveal">ABOUT</div>
+      <h2 class="section-title reveal d1">尽管繁荣，<br>莫问前程。</h2>
+      <div class="section-body reveal d2">
+        <p>非典型动科学生，一心向 AI 生长。江苏与新疆之间的长期主义者，喜欢思考式阅读、线下活动、写作、跑步与复盘。</p>
+        <p>每天跑步、写作，让自己行走在 growing 的路上。喜欢线下活动的真实氛围，也乐于在反思复盘里看见自己的变化。</p>
+      </div>
+
+      <hr class="draw-rule">
+
+      <div class="focus-grid">
+        <div class="focus-card reveal d2" data-focus="用文字记录成长、复盘与思考">
+          <div class="focus-icon">✎</div>
+          <b>写作</b>
+          <p>在公众号「潜渡探索」里记录成长足迹。</p>
+        </div>
+        <div class="focus-card reveal d3" data-focus="动科专业，却一心向 AI 靠近">
+          <div class="focus-icon">AI</div>
+          <b>AI</b>
+          <p>以非典型路径，向更大的世界靠近。</p>
+        </div>
+        <div class="focus-card reveal d4" data-focus="每天跑步，让身体和意志一起生长">
+          <div class="focus-icon">↟</div>
+          <b>锻炼</b>
+          <p>跑步、行动、复盘，持续生长。</p>
+        </div>
+        <div class="focus-card reveal d5" data-focus="线下活动让我真实地看见人与连接">
+          <div class="focus-icon">◎</div>
+          <b>线下</b>
+          <p>喜欢活动现场真实、鲜活的氛围。</p>
+        </div>
+      </div>
+      <div class="focus-now reveal d6" id="focusText"><span>当前聚焦：</span>去一个让我恐惧的地方</div>
+    </div>
+  </section>
+
+  <!-- ════ WORKS ════ -->
+  <section class="section" id="works">
+    <div class="section-inner">
+      <div class="section-eyebrow reveal">WORKS</div>
+      <h2 class="section-title reveal d1">我正在造的东西：<br>潜渡空间。</h2>
+      <div class="section-body reveal d2">
+        <p>目前我主要在持续建设自己的公众号「潜渡空间」，记录成长足迹、传播认知思想，也把写作当成一条持续自我拆解、自我观察、自我更新的路。</p>
+      </div>
+
+      <div class="qr-box reveal d3">
+        <img src="/assets/images/qian-du-space-qr.jpg" alt="潜渡空间公众号二维码">
+        <div class="qr-info">
+          <b>潜渡空间</b>
+          <small>公众号二维码</small>
+          <p>扫码关注，一起成长。</p>
+        </div>
+      </div>
+
+      <div class="link-cards reveal d4" style="margin-top:16px;">
+        <a href="../works/index.html" class="link-card">
+          <h3>作品展示 →</h3>
+          <p>视觉短片、交互页面、校园宣传</p>
+        </a>
+        <a href="../blog/index.html" class="link-card">
+          <h3>途言博客 →</h3>
+          <p>写下来，就活到了天亮</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ CAMPUS ════ -->
+  <section class="section" id="campus">
+    <div class="section-inner">
+      <div class="section-eyebrow reveal">CAMPUS ROLES</div>
+      <h2 class="section-title reveal d1">我在校内，<br>也练习表达。</h2>
+      <div class="section-body reveal d2">
+        <p>这些不是我的"作品"，而是我在校内担任过或正在担任的职务。它们让我持续接触校园宣传、新媒体运营、视觉排版、内容策划、影像记录与活动传播。</p>
+      </div>
+      <div class="role-grid reveal d3">
+        <div class="role">班内宣传委员</div>
+        <div class="role">院级团委宣传部干事</div>
+        <div class="role">曾任校级易班综合运营部</div>
+        <div class="role">易班影像工作室成员</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ CONTACT ════ -->
+  <section class="section" id="contact">
+    <div class="section-inner">
+      <div class="section-eyebrow reveal">CONTACT</div>
+      <h2 class="section-title reveal d1">希望在未来的道路上，<br>相互见证。</h2>
+      <div class="section-body reveal d2">
+        <p>欢迎来聊 AI、写作、成长、校园宣传，或者一起做点有生命力的东西。</p>
+      </div>
+
+      <div class="contact-card reveal d3">
+        <div class="qr-box" style="margin-top:0;background:transparent;border:none;padding:0;">
+          <img src="/assets/images/wechat-qr.jpg" alt="家齐 Darben 的个人微信二维码">
+          <div class="qr-info">
+            <b>家齐 Darben</b>
+            <small>个人微信二维码</small>
+            <p>扫一扫二维码，加我为朋友</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <a href="../index.html" class="back-top reveal">← 返回名片</a>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div>© 2026 家齐 / Darben. 尽管繁荣，莫问前程。</div>
+    <div>江苏 / 新疆 · 非典型动科学生 · 潜渡空间</div>
+  </div>
+</footer>
+
+<script>
+(function() {
+  // ── Background particles ──
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let pts = [], w, h;
+  const N = 30;
+
+  function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = document.documentElement.scrollHeight;
+  }
+  function init() {
+    pts = [];
+    for (let i = 0; i < N; i++) {
+      pts.push({
+        x: Math.random() * w, y: Math.random() * h,
+        r: Math.random() * 1.4 + .3,
+        vx: (Math.random() - .5) * .12,
+        vy: (Math.random() - .5) * .12 - .08,
+        o: Math.random() * .4 + .08,
+        p: Math.random() * Math.PI * 2
+      });
+    }
+  }
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    for (const p of pts) {
+      p.x += p.vx; p.y += p.vy; p.p += .007;
+      if (p.x < -20) p.x = w + 20; if (p.x > w + 20) p.x = -20;
+      if (p.y < -20) p.y = h + 20; if (p.y > h + 20) p.y = -20;
+      const a = p.o + Math.sin(p.p) * .12;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(126,200,227,${Math.max(.02, a)})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  resize(); init(); draw();
+  window.addEventListener('resize', () => { resize(); init(); });
+
+  // ── Progress bar ──
+  const progress = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = h.scrollTop / (h.scrollHeight - h.clientHeight) * 100;
+    progress.style.width = pct + '%';
+  }, {passive: true});
+
+  // ── Scroll reveal ──
+  const revealIO = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
+  }, { threshold: .15 });
+  document.querySelectorAll('.reveal').forEach(el => revealIO.observe(el));
+  document.querySelectorAll('.draw-rule').forEach(el => revealIO.observe(el));
+
+  // ── Focus hover ──
+  const ft = document.getElementById('focusText');
+  document.querySelectorAll('.focus-card').forEach(c => {
+    c.addEventListener('mouseenter', () => { ft.innerHTML = '<span>当前聚焦：</span>' + c.dataset.focus; });
+    c.addEventListener('mouseleave', () => { ft.innerHTML = '<span>当前聚焦：</span>去一个让我恐惧的地方'; });
+  });
+})();
+</script>
+
+</body>
+</html>

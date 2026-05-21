@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>看到之后</title>
+<link rel="preconnect" href="https://fonts.loli.net">
+<link rel="preconnect" href="https://gstatic.loli.net" crossorigin>
+<link href="https://fonts.loli.net/css2?family=Noto+Serif+SC:wght@300;400;700;900&family=Noto+Sans+SC:wght@300;400;700;900&family=JetBrains+Mono:wght@400;700&family=Bebas+Neue&family=Anton&display=swap" rel="stylesheet">
+<script src="https://cdn.bootcdn.net/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root {
+  --ink:   #070707;
+  --bone:  #ede8df;
+  --bone2: #b8b0a0;
+  --blood: #c8281a;
+  --gray:  #666660;
+  --warm:  #c2843a;
+  --u: calc(min(100vw, 177.78vh) / 100);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+html, body { width: 100%; height: 100%; background: #000; overflow: hidden; color: var(--bone); font-family: 'Noto Serif SC', serif; }
+body { display: flex; align-items: center; justify-content: center; }
+
+/* grain */
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 300; pointer-events: none;
+  opacity: .28; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  animation: grain 7s steps(3, end) infinite;
+}
+@keyframes grain { 0%{background-position:0 0} 33%{background-position:-55px 35px} 66%{background-position:25px -45px} 100%{background-position:-30px 20px} }
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  overflow: hidden; background: var(--ink);
+}
+.shot { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--ink); }
+.shot.on { display: block; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.vignette {
+  position: absolute; inset: 0; z-index: 100; pointer-events: none;
+  box-shadow: inset 0 0 calc(var(--u)*18) calc(var(--u)*7) rgba(0,0,0,.92);
+}
+
+#curtain { position: absolute; inset: 0; z-index: 280; background: #000; opacity: 0; pointer-events: none; }
+
+#progressBar {
+  position: absolute; top: 0; left: 0; height: 2px; z-index: 500; width: 0%;
+  background: linear-gradient(to right, var(--blood), var(--warm));
+  box-shadow: 0 0 8px rgba(200,40,26,.5); transition: width .12s linear;
+}
+
+.stamp {
+  position: absolute; z-index: 240; pointer-events: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: calc(var(--u)*.78); letter-spacing: .32em;
+  color: rgba(237,232,223,.28);
+}
+.stamp.a { top: calc(var(--u)*1.8); left: calc(var(--u)*2.2); }
+.stamp.b { top: calc(var(--u)*1.8); right: calc(var(--u)*2.2); text-align: right; }
+.stamp.c { bottom: calc(var(--u)*1.8); left: 50%; transform: translateX(-50%); letter-spacing: .55em; }
+
+#pauseBtn {
+  position: absolute; bottom: calc(var(--u)*1.8); right: calc(var(--u)*2.5); z-index: 500;
+  border: 1px solid rgba(237,232,223,.1); background: rgba(7,7,7,.5); color: rgba(237,232,223,.3);
+  font-family: 'JetBrains Mono', monospace; font-size: calc(var(--u)*.9); letter-spacing: .1em;
+  padding: calc(var(--u)*.4) calc(var(--u)*1.2); cursor: pointer; border-radius: 2px;
+  backdrop-filter: blur(8px); transition: all .3s ease;
+}
+#pauseBtn:hover { border-color: rgba(237,232,223,.3); color: rgba(237,232,223,.65); }
+
+#startOverlay {
+  position: absolute; inset: 0; z-index: 510;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.82); backdrop-filter: blur(8px);
+  transition: opacity .6s ease;
+}
+#startOverlay.hidden { opacity: 0; pointer-events: none; }
+#startBtn {
+  border: 0; background: var(--blood); color: var(--bone);
+  font-family: 'Anton', sans-serif; font-size: calc(var(--u)*1.8); letter-spacing: .38em;
+  padding: calc(var(--u)*1.5) calc(var(--u)*6); cursor: pointer;
+  clip-path: polygon(0 0,100% 0,94% 100%,6% 100%);
+  box-shadow: 0 18px 80px rgba(200,40,26,.35);
+}
+#startBtn:hover { background: #a71910; }
+
+/* flash */
+.flash-el { position: absolute; inset: 0; z-index: 350; background: #fff; opacity: 0; pointer-events: none; }
+
+/* common layout helpers */
+.bigGhost {
+  position: absolute; pointer-events: none; z-index: 1;
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  line-height: .85; letter-spacing: -.08em;
+  color: rgba(237,232,223,.04); white-space: nowrap;
+}
+.wall {
+  position: absolute; top: -10%; height: 120%; width: calc(var(--u)*8);
+  background: linear-gradient(180deg, transparent, var(--blood), transparent);
+  transform: skewX(-14deg); box-shadow: 0 0 calc(var(--u)*5) rgba(200,40,26,.3);
+  z-index: 3; transform-origin: bottom; opacity: 0;
+}
+.slash-bar {
+  height: calc(var(--u)*.45); background: var(--blood);
+  transform: scaleX(0); transform-origin: left; z-index: 9;
+}
+.outline-text { color: transparent; -webkit-text-stroke: calc(var(--u)*.07) var(--bone); }
+.red { color: var(--blood); }
+.warm-c { color: var(--warm); }
+.gray-c { color: var(--gray); }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.bebas { font-family: 'Bebas Neue', sans-serif; }
+.anton { font-family: 'Anton', sans-serif; }
+
+/* ══ S00 片头 ══ */
+.s0 { background: #000; }
+.s0 .ghost00 { font-size: calc(var(--u)*22); top: -5%; left: -3%; opacity: 0; }
+.s0 .main-wrap { position: absolute; left: calc(var(--u)*5); top: 50%; transform: translateY(-52%); z-index: 10; }
+.s0 .main-title {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*18); line-height: .82; letter-spacing: -.08em;
+  color: var(--bone); opacity: 0;
+}
+.s0 .sub-title {
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 300;
+  font-size: calc(var(--u)*2); letter-spacing: .18em;
+  color: rgba(237,232,223,.4);
+  margin-top: calc(var(--u)*2.5); opacity: 0;
+}
+.s0 .wall-r { right: calc(var(--u)*10); }
+.s0 .red-num {
+  position: absolute; right: calc(var(--u)*5); bottom: calc(var(--u)*5);
+  font-family: 'Anton', sans-serif; font-size: calc(var(--u)*1.2);
+  letter-spacing: .35em; color: rgba(200,40,26,.55); z-index: 9; opacity: 0;
+}
+
+/* ══ S01 入局 ══ */
+.s1 { background: linear-gradient(135deg,#080808,#020202 60%,#0a0505); }
+.s1 .ghost01 { font-size: calc(var(--u)*20); top: -2%; right: -4%; opacity: 0; }
+.s1 .wall-l { left: calc(var(--u)*38); }
+.s1 .main1 { position: absolute; left: calc(var(--u)*5); top: calc(var(--u)*8); z-index: 8; }
+.s1 .top1 {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*2.2);
+  letter-spacing: .45em; color: rgba(237,232,223,.45); opacity: 0;
+}
+.s1 .price-row {
+  display: flex; gap: calc(var(--u)*3); align-items: baseline;
+  margin-top: calc(var(--u)*1.5);
+}
+.s1 .price-item {
+  font-family: 'Anton', sans-serif;
+  font-size: calc(var(--u)*11); line-height: .88; letter-spacing: -.02em;
+  color: rgba(237,232,223,.12); opacity: 0;
+}
+.s1 .price-item.chosen {
+  color: var(--blood);
+  text-shadow: 0 0 calc(var(--u)*4) rgba(200,40,26,.25);
+}
+.s1 .price-sep { font-size: calc(var(--u)*5); color: rgba(237,232,223,.1); opacity: 0; }
+.s1 .sub1 {
+  position: absolute; left: calc(var(--u)*5.5); bottom: calc(var(--u)*6); z-index: 9;
+  font-size: calc(var(--u)*3.8); letter-spacing: -.04em; opacity: 0;
+}
+
+/* ══ S02 地域 ══ */
+.s2 { background: #050505; }
+.s2 .ghost02 { font-family: 'Anton', sans-serif; font-size: calc(var(--u)*32); top: -8%; right: -5%; color: rgba(237,232,223,.03); letter-spacing: -.03em; opacity: 0; }
+.s2 .wall-r2 { right: calc(var(--u)*8); }
+.s2 .main2 { position: absolute; left: calc(var(--u)*5); top: calc(var(--u)*9); z-index: 8; }
+.s2 .loc-tag {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*2); letter-spacing: .5em;
+  color: rgba(200,40,26,.7); opacity: 0;
+}
+.s2 .dist-big {
+  font-family: 'Anton', sans-serif; font-size: calc(var(--u)*15); line-height: .82; letter-spacing: -.04em;
+  opacity: 0;
+}
+.s2 .dist-unit {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*3.5); letter-spacing: .3em;
+  color: rgba(237,232,223,.38); margin-top: calc(var(--u)*.8); opacity: 0;
+}
+.s2 .side2 { position: absolute; right: calc(var(--u)*5); top: 50%; transform: translateY(-50%); z-index: 8; text-align: center; width: calc(var(--u)*26); }
+.s2 .ladder-icon { opacity: 0; margin: 0 auto calc(var(--u)*2); display: flex; align-items: center; justify-content: center; }
+.s2 .side-copy {
+  font-family: 'Noto Serif SC', serif; font-weight: 300;
+  font-size: calc(var(--u)*2.2); letter-spacing: .06em; line-height: 1.9;
+  color: rgba(237,232,223,.5); opacity: 0;
+}
+.s2 .danger2 {
+  font-family: 'Noto Serif SC', serif; font-weight: 700;
+  font-size: calc(var(--u)*2.8); color: var(--blood); letter-spacing: .04em;
+  margin-top: calc(var(--u)*2); opacity: 0;
+}
+.s2 .slash-bar2 { position: absolute; left: calc(var(--u)*5); right: calc(var(--u)*5); bottom: calc(var(--u)*6); }
+
+/* ══ S03 苏醒 ══ */
+.s3 { background: #050505; }
+.s3 .ghost03 { font-size: calc(var(--u)*18); bottom: -5%; left: 50%; transform: translateX(-50%); color: rgba(237,232,223,.04); opacity: 0; }
+.s3 .center3 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 8; text-align: center; }
+.s3 .date3 {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*1.6); letter-spacing: .5em;
+  color: rgba(200,40,26,.6); margin-bottom: calc(var(--u)*4); opacity: 0;
+}
+.s3 .repeat-row { display: flex; flex-direction: column; gap: calc(var(--u)*1); margin-bottom: calc(var(--u)*5); }
+.s3 .r-line {
+  font-family: 'Noto Serif SC', serif; font-weight: 700;
+  font-size: calc(var(--u)*5.5); line-height: .9; letter-spacing: -.06em;
+  opacity: 0;
+}
+.s3 .r-line:nth-child(1) { color: rgba(237,232,223,.12); font-size: calc(var(--u)*4); }
+.s3 .r-line:nth-child(2) { color: rgba(237,232,223,.38); font-size: calc(var(--u)*5); }
+.s3 .r-line:nth-child(3) { color: var(--bone); }
+.s3 .awake-line {
+  font-size: calc(var(--u)*3.2); letter-spacing: .06em;
+  color: rgba(237,232,223,.55); opacity: 0;
+}
+.s3 .slash-bar3 { position: absolute; left: calc(var(--u)*5); right: calc(var(--u)*5); bottom: calc(var(--u)*6); }
+
+/* ══ S04 行动 ══ */
+.s4 { background: #050505; }
+.s4 .ghost04 { font-size: calc(var(--u)*22); top: -3%; left: -4%; opacity: 0; }
+.s4 .wall-r4 { right: calc(var(--u)*5); }
+.s4 .main4 { position: absolute; left: calc(var(--u)*5); top: calc(var(--u)*7); z-index: 8; width: calc(var(--u)*55); }
+.s4 .km-tag {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*2); letter-spacing: .42em;
+  color: rgba(237,232,223,.3); margin-bottom: calc(var(--u)*3); opacity: 0;
+}
+.s4 .reasons4 { display: flex; gap: calc(var(--u)*2); margin-bottom: calc(var(--u)*3); flex-wrap: wrap; }
+.s4 .reason-tag {
+  font-family: 'Noto Sans SC', sans-serif; font-weight: 300;
+  font-size: calc(var(--u)*2); color: rgba(237,232,223,.3);
+  padding: calc(var(--u)*.5) calc(var(--u)*1.6);
+  border: 1px solid rgba(237,232,223,.1); letter-spacing: .06em;
+  text-decoration: line-through; text-decoration-color: rgba(200,40,26,.5);
+  opacity: 0;
+}
+.s4 .trigger4 {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*10); line-height: .84; letter-spacing: -.08em;
+  color: var(--bone); opacity: 0;
+}
+.s4 .trigger4 .go { color: var(--blood); font-size: calc(var(--u)*12); }
+.s4 .sub4 {
+  font-size: calc(var(--u)*2.4); color: rgba(237,232,223,.5);
+  letter-spacing: .06em; line-height: 1.8; margin-top: calc(var(--u)*2.5); opacity: 0;
+}
+
+/* ══ S05 坚持 ══ */
+.s5 { background: #050505; }
+.s5 .ghost05 { font-size: calc(var(--u)*24); top: 50%; right: -6%; transform: translateY(-50%); color: rgba(237,232,223,.04); opacity: 0; }
+.s5 .center5 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 8; }
+.s5 .month5 {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*1.6); letter-spacing: .52em;
+  color: rgba(200,40,26,.65); margin-bottom: calc(var(--u)*5); opacity: 0;
+}
+.s5 .action-grid { display: flex; gap: calc(var(--u)*7); margin-bottom: calc(var(--u)*5); }
+.s5 .act-item { text-align: center; opacity: 0; }
+.s5 .act-icon {
+  font-family: 'Noto Serif SC', serif; font-size: calc(var(--u)*6.5);
+  line-height: 1; margin-bottom: calc(var(--u)*1.5); display: block;
+  color: var(--bone);
+}
+.s5 .act-label {
+  font-family: 'Noto Sans SC', sans-serif; font-size: calc(var(--u)*2);
+  color: rgba(237,232,223,.42); letter-spacing: .12em;
+}
+.s5 .note5 {
+  font-family: 'Noto Serif SC', serif; font-weight: 300;
+  font-size: calc(var(--u)*2.4); color: rgba(237,232,223,.38);
+  letter-spacing: .06em; opacity: 0;
+}
+.s5 .slash-bar5 { position: absolute; left: calc(var(--u)*18); right: calc(var(--u)*18); bottom: calc(var(--u)*6); }
+
+/* ══ S06 FOMO ══ */
+.s6 { background: #040404; }
+.s6 .ghost06 {
+  font-family: 'Anton', sans-serif; font-size: calc(var(--u)*28); top: 50%; left: 50%;
+  transform: translate(-50%,-50%); color: rgba(200,40,26,.04); letter-spacing: -.03em; opacity: 0;
+}
+.s6 .wall-l6 { left: calc(var(--u)*45); }
+.s6 .main6 { position: absolute; left: calc(var(--u)*5); top: calc(var(--u)*7); z-index: 8; width: calc(var(--u)*42); }
+.s6 .fomo-label {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*1.8); letter-spacing: .48em;
+  color: rgba(200,40,26,.7); margin-bottom: calc(var(--u)*2); opacity: 0;
+}
+.s6 .fomo-big {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*7.5); line-height: .88; letter-spacing: -.07em;
+  color: rgba(237,232,223,.6); opacity: 0;
+}
+.s6 .fomo-big2 { color: var(--blood); font-size: calc(var(--u)*13); display: block; }
+.s6 .chain-wrap {
+  position: absolute; right: calc(var(--u)*4); top: calc(var(--u)*7); z-index: 8; width: calc(var(--u)*44);
+}
+.s6 .chain-row { display: flex; align-items: center; gap: calc(var(--u)*1.2); margin-bottom: calc(var(--u)*2); }
+.s6 .tool-node {
+  font-family: 'JetBrains Mono', monospace; font-size: calc(var(--u)*1.7);
+  color: rgba(237,232,223,.55); padding: calc(var(--u)*.5) calc(var(--u)*1.5);
+  border: 1px solid rgba(237,232,223,.12); border-radius: 2px; opacity: 0; white-space: nowrap;
+}
+.s6 .tool-arrow { font-size: calc(var(--u)*1.8); color: rgba(237,232,223,.22); opacity: 0; }
+.s6 .addict6 {
+  position: absolute; left: calc(var(--u)*5); bottom: calc(var(--u)*7); z-index: 9;
+  font-family: 'Noto Serif SC', serif; font-weight: 700;
+  font-size: calc(var(--u)*2.8); color: var(--bone);
+  letter-spacing: .04em; line-height: 1.7; opacity: 0;
+}
+.s6 .slash-bar6 { position: absolute; left: calc(var(--u)*5); right: calc(var(--u)*5); bottom: calc(var(--u)*5); }
+
+/* ══ S07 看到之后 ══ */
+.s7 { background: #030303; }
+.s7 .ghost07 { font-size: calc(var(--u)*18); bottom: -4%; right: -5%; opacity: 0; }
+.s7 .split7 { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center; z-index: 8; }
+.s7 .divider7 { height: 72%; width: 1px; background: linear-gradient(to bottom,transparent,rgba(237,232,223,.25),transparent); margin: auto; opacity: 0; }
+.s7 .left7 { padding: calc(var(--u)*5) calc(var(--u)*5) calc(var(--u)*5) calc(var(--u)*5); display: flex; flex-direction: column; gap: calc(var(--u)*2.2); }
+.s7 .j-label {
+  font-family: 'Bebas Neue', sans-serif; font-size: calc(var(--u)*1.5); letter-spacing: .48em;
+  color: rgba(200,40,26,.6); opacity: 0;
+}
+.s7 .j-item {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*4.5); line-height: .92; letter-spacing: -.05em;
+  color: rgba(237,232,223,.2); opacity: 0; transition: color .5s ease;
+}
+.s7 .j-item.lit { color: rgba(237,232,223,.65); }
+.s7 .j-item.peak { color: var(--warm); }
+.s7 .right7 { padding: calc(var(--u)*5); display: flex; flex-direction: column; justify-content: center; gap: calc(var(--u)*3); }
+.s7 .c-line7 {
+  font-family: 'Noto Serif SC', serif; font-weight: 700;
+  font-size: calc(var(--u)*3.6); letter-spacing: .03em; line-height: 1.4; opacity: 0;
+  color: rgba(237,232,223,.55);
+}
+.s7 .c-line7.c2-warm {
+  font-size: calc(var(--u)*4.2); color: rgba(237,232,223,.85); font-weight: 900;
+}
+.s7 .finale7 {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*6); line-height: .92; letter-spacing: -.04em;
+  color: var(--bone); opacity: 0;
+}
+.s7 .finale-sub {
+  font-weight: 300; font-size: calc(var(--u)*2.8);
+  color: rgba(237,232,223,.55); letter-spacing: .1em; margin-top: calc(var(--u)*1.5); display: block;
+}
+
+/* ══ S08 片尾 ══ */
+.s8 { background: #000; }
+.s8 .ghost08 { font-size: calc(var(--u)*20); top: 50%; left: 50%; transform: translate(-50%,-50%); opacity: 0; }
+.s8 .end-wrap { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.s8 .end-phrase {
+  font-family: 'Noto Serif SC', serif; font-weight: 300;
+  font-size: calc(var(--u)*3); color: rgba(237,232,223,.4);
+  letter-spacing: .18em; line-height: 2.2; text-align: center; opacity: 0;
+}
+.s8 .end-phrase span { display: block; opacity: 0; }
+.s8 .end-title {
+  font-family: 'Noto Serif SC', serif; font-weight: 900;
+  font-size: calc(var(--u)*12); letter-spacing: .55em;
+  color: var(--bone); margin-top: calc(var(--u)*2.2); opacity: 0;
+  text-indent: .55em;
+}
+.s8 .credit {
+  position: absolute; bottom: calc(var(--u)*3); right: calc(var(--u)*4);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: calc(var(--u)*.85); letter-spacing: .18em;
+  color: rgba(237,232,223,.14); z-index: 20;
+}
+.s8 .slash-bar8 { position: absolute; left: calc(var(--u)*20); right: calc(var(--u)*20); top: calc(var(--u)*6); }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage"
+  <div id="progressBar"></div>
+  <div id="curtain"></div>
+  <div class="stamp a">REEL 01</div>
+  <div class="stamp b" id="stampTime">00:00</div>
+  <div class="stamp c">看到之后</div>
+  <button id="pauseBtn" style="opacity:0;pointer-events:none;">⏸</button>
+  <div id="startOverlay"><button id="startBtn">▶ 开始</button></div>
+
+  <!-- S00 片头 -->
+  <div class="shot s0" id="s0">
+    <canvas id="c0"></canvas>
+    <div class="bigGhost ghost00">看到之后</div>
+    <div class="wall wall-r" id="s0wall"></div>
+    <div class="vignette"></div>
+    <div class="main-wrap">
+      <div class="main-title" id="s0-title">看到之后</div>
+      <div class="sub-title" id="s0-sub">从怨天尤人，到上瘾 AI</div>
+    </div>
+    <div class="red-num" id="s0-num">2024 → 2025</div>
+  </div>
+
+  <!-- S01 入局 -->
+  <div class="shot s1" id="s1">
+    <canvas id="c1"></canvas>
+    <div class="bigGhost ghost01">入局</div>
+    <div class="wall wall-l" id="s1wall"></div>
+    <div class="vignette"></div>
+    <div class="main1">
+      <div class="top1 bebas" id="s1-top">2024 / 08 — 入局</div>
+      <div class="price-row">
+        <div class="price-item" id="s1-p1">799</div>
+        <div class="price-sep" id="s1-sep1">/</div>
+        <div class="price-item" id="s1-p2">3650</div>
+        <div class="price-sep" id="s1-sep2">/</div>
+        <div class="price-item" id="s1-p3">10000</div>
+      </div>
+      </div>
+    <div class="sub1" id="s1-sub">但至少，<span class="warm-c">我上车了。</span></div>
+    <div id="s1-note" style="position:absolute;left:calc(var(--u)*5);bottom:calc(var(--u)*7);z-index:9;font-size:calc(var(--u)*2.2);color:rgba(237,232,223,.38);letter-spacing:.08em;opacity:0;">三档价格，我只上得起799。</div>
+  </div>
+
+  <!-- S02 地域 -->
+  <div class="shot s2" id="s2">
+    <canvas id="c2"></canvas>
+    <div class="bigGhost ghost02 anton">4071</div>
+    <div class="wall wall-r2" id="s2wall"></div>
+    <div class="vignette"></div>
+    <div class="main2">
+      <div class="loc-tag bebas" id="s2-loc">新疆 → 杭州</div>
+      <div class="dist-big" id="s2-dist">4071</div>
+      <div class="dist-unit bebas" id="s2-unit">公里</div>
+    </div>
+    <div class="side2">
+      <div class="ladder-icon" id="s2-ladder">
+        <svg viewBox="0 0 60 84" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:calc(min(100vw,177.78vh)*0.055);height:auto;display:block;margin:0 auto;">
+          <rect x="6" y="0" width="8" height="84" rx="3" fill="rgba(237,232,223,0.45)"/>
+          <rect x="46" y="0" width="8" height="84" rx="3" fill="rgba(237,232,223,0.45)"/>
+          <rect x="6" y="12" width="48" height="6" rx="2" fill="rgba(237,232,223,0.35)"/>
+          <rect x="6" y="30" width="48" height="6" rx="2" fill="rgba(237,232,223,0.35)"/>
+          <rect x="6" y="48" width="48" height="6" rx="2" fill="rgba(237,232,223,0.35)"/>
+          <rect x="6" y="66" width="48" height="6" rx="2" fill="rgba(237,232,223,0.35)"/>
+          <line x1="0" y1="84" x2="60" y2="0" stroke="#c8281a" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="side-copy" id="s2-copy">因为地方管制，用不了<br>只能看着 uu 们晒<br>GPT、Claude、Gemini</div>
+      <div class="danger2" id="s2-danger">「就这样吧，也不错。」</div>
+    </div>
+    <div class="slash-bar slash-bar2" id="s2-slash"></div>
+  </div>
+
+  <!-- S03 苏醒 -->
+  <div class="shot s3" id="s3">
+    <canvas id="c3"></canvas>
+    <div class="bigGhost ghost03">苏醒</div>
+    <div class="vignette"></div>
+    <div class="center3">
+      <div class="date3 bebas" id="s3-date">2025 / 02 — 苏醒</div>
+      <div class="repeat-row">
+        <div class="r-line" id="s3-r1">吃饭顺序印入脑海。</div>
+        <div class="r-line" id="s3-r2">吃饭顺序印入脑海。</div>
+        <div class="r-line" id="s3-r3">吃饭顺序印入脑海。</div>
+      </div>
+      <div class="awake-line" id="s3-em">脑子里，<span class="warm-c">有什么东西在松动。</span></div>
+    </div>
+    <div class="slash-bar slash-bar3" id="s3-slash"></div>
+  </div>
+
+  <!-- S04 行动 -->
+  <div class="shot s4" id="s4">
+    <canvas id="c4"></canvas>
+    <div class="bigGhost ghost04">行动</div>
+    <div class="wall wall-r4" id="s4wall"></div>
+    <div class="vignette"></div>
+    <div class="main4">
+      <div class="km-tag" id="s4-km">2025 · 03 · 21 &nbsp;/&nbsp; 4071 KM 单程</div>
+      <div class="reasons4" id="s4-reasons">
+        <div class="reason-tag" id="s4-r1">太远了</div>
+        <div class="reason-tag" id="s4-r2">没有钱</div>
+        <div class="reason-tag" id="s4-r3">要上课</div>
+      </div>
+      <div class="trigger4" id="s4-trigger">我必须<span class="go">去</span></div>
+      <div class="sub4" id="s4-sub">那是我第一次到线下。<br>认识了那么多优秀的uu。</div>
+    </div>
+  </div>
+
+  <!-- S05 坚持 -->
+  <div class="shot s5" id="s5">
+    <canvas id="c5"></canvas>
+    <div class="bigGhost ghost05">坚持</div>
+    <div class="vignette"></div>
+    <div class="center5">
+      <div class="month5 bebas" id="s5-month">2025 / 04 — 坚持</div>
+      <div class="action-grid">
+        <div class="act-item" id="s5-a1">
+          <span class="act-icon">💪</span>
+          <div class="act-label">引体 · 深蹲</div>
+        </div>
+        <div class="act-item" id="s5-a2">
+          <span class="act-icon">🏃</span>
+          <div class="act-label">每日跑步</div>
+        </div>
+        <div class="act-item" id="s5-a3">
+          <span class="act-icon">✍️</span>
+          <div class="act-label">每日写作</div>
+        </div>
+      </div>
+      <div class="note5" id="s5-note">拉上朋友，定时运动，互相监督，防止偷懒。</div>
+    </div>
+    <div class="slash-bar slash-bar5" id="s5-slash"></div>
+  </div>
+
+  <!-- S06 FOMO -->
+  <div class="shot s6" id="s6">
+    <canvas id="c6"></canvas>
+    <div class="bigGhost ghost06 anton">FOMO</div>
+    <div class="wall wall-l6" id="s6wall"></div>
+    <div class="vignette"></div>
+    <div class="main6">
+      <div class="fomo-label bebas" id="s6-label">2025 / 05 — FOMO 爆发</div>
+      <div class="fomo-big" id="s6-big">群里<br><span class="fomo-big2" id="s6-big2">都有了</span></div>
+    </div>
+    <div class="chain-wrap">
+      <div class="chain-row" id="s6-row1">
+        <div class="tool-node" id="s6-t1">聊天工具</div>
+        <div class="tool-arrow" id="s6-a1">→</div>
+        <div class="tool-node" id="s6-t2">小龙虾</div>
+        <div class="tool-arrow" id="s6-a2">→</div>
+        <div class="tool-node" id="s6-t3">Claude Code</div>
+      </div>
+      <div class="chain-row" id="s6-row2">
+        <div class="tool-node" id="s6-t4">PDF 文字</div>
+        <div class="tool-arrow" id="s6-a3">→</div>
+        <div class="tool-node" id="s6-t5">照片图片</div>
+        <div class="tool-arrow" id="s6-a4">→</div>
+        <div class="tool-node" id="s6-t6">HTML 网站</div>
+        <div class="tool-arrow" id="s6-a5">→</div>
+        <div class="tool-node" id="s6-t7">MP4 视频</div>
+      </div>
+    </div>
+    <div class="addict6" id="s6-addict">起床第一件事，就是看电脑有没有连上。<br><span style="font-size:calc(var(--u)*1.8);font-weight:300;color:rgba(237,232,223,.32);">即使只是 DeepSeek 的 API。</span></div>
+    <div class="slash-bar slash-bar6" id="s6-slash"></div>
+  </div>
+
+  <!-- S07 看到之后 -->
+  <div class="shot s7" id="s7">
+    <canvas id="c7"></canvas>
+    <div class="bigGhost ghost07">看到</div>
+    <div class="vignette"></div>
+    <div class="split7">
+      <div class="left7">
+        <div class="j-label bebas" id="s7-jlabel">从 → 到</div>
+        <div class="j-item" id="s7-j1">从怨天尤人</div>
+        <div class="j-item" id="s7-j2">到心情平稳</div>
+        <div class="j-item" id="s7-j3">到中高精力</div>
+        <div class="j-item" id="s7-j4">到上瘾 AI</div>
+      </div>
+      <div class="divider7" id="s7-div"></div>
+      <div class="right7">
+        <div class="c-line7" id="s7-c1">以前的 FOMO，让我 <span class="red">停住。</span></div>
+        <div class="c-line7 c2-warm" id="s7-c2">现在的 FOMO，提醒我 <span class="warm-c">开始。</span></div>
+        <div class="finale7" id="s7-finale">看到之后——<span class="finale-sub">别停在害怕里。</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S08 片尾 -->
+  <div class="shot s8" id="s8">
+    <canvas id="c8"></canvas>
+    <div class="bigGhost ghost08">看到</div>
+    <div class="vignette"></div>
+    <div class="slash-bar slash-bar8" id="s8-slash"></div>
+    <div class="end-wrap">
+      <div class="end-phrase" id="s8-phrase">
+        <span id="s8-l1">看到别人</span>
+        <span id="s8-l2">看到差距</span>
+        <span id="s8-l3">看到限制</span>
+        <span id="s8-l4">看到心力</span>
+        <span id="s8-l5">也看到自己</span>
+      </div>
+      <div class="end-title" id="s8-title">看到之后</div>
+      <div style="position:absolute;left:50%;bottom:calc(var(--u)*14);transform:translateX(-50%);z-index:10;font-size:calc(var(--u)*2.2);color:rgba(237,232,223,.45);letter-spacing:.35em;font-family:'Noto Sans SC',sans-serif;font-weight:300;opacity:0;" id="s8-outro">然后，出发。</div>
+    </div>
+    <div class="credit">@IP训练营 · 家齐 · 新疆</div>
+  </div>
+
+</div>
+
+<script>
+const G = gsap;
+const $ = id => document.getElementById(id);
+const curtain = $('curtain');
+const progressBar = $('progressBar');
+const pauseBtn = $('pauseBtn');
+const startOverlay = $('startOverlay');
+
+let transitioning = false;
+let paused = false;
+let fakeTime = 0;
+let lastCueIdx = -1;
+const totalDuration = 130;
+
+	// ── BGM ──────────────────────────────────────────────────────────
+	// Rumination by Kevin MacLeod — Audio 元素，兼容 file:// 和 HTTP
+	const bgmAudio = new Audio('bgm_rumination.mp3');
+	bgmAudio.volume = 0.35;
+	bgmAudio.preload = 'auto';
+	function playBGM() { bgmAudio.play().catch(() => {}); }
+	function pauseBGM() { bgmAudio.pause(); }
+	function resumeBGM() { bgmAudio.play().catch(() => {}); }
+	document.addEventListener('visibilitychange', () => {
+	  if (!document.hidden) { bgmAudio.play().catch(() => {}); }
+	});
+
+// ── Canvas helpers ───────────────────────────────────────────────
+let loopTokens = [];
+function loopToken() { const t = { alive: true }; loopTokens.push(t); return t; }
+function killLoops() { loopTokens.forEach(t => t.alive = false); loopTokens = []; }
+
+function syncCanvases() {
+  const stage = document.querySelector('.stage');
+  document.querySelectorAll('.shot.on canvas').forEach(cv => {
+    cv.width = stage.clientWidth; cv.height = stage.clientHeight;
+  });
+}
+
+function initCanvas(id) {
+  const cv = $(id); if (!cv) return null;
+  const stage = document.querySelector('.stage');
+  cv.width = stage.clientWidth; cv.height = stage.clientHeight;
+  return cv;
+}
+
+// S00 片头 — 同心圆波纹扩散（「看到」的注视感）
+function ripplesCanvas(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  const cx = cv.width / 2, cy = cv.height / 2;
+  const waves = Array.from({ length: 6 }, (_, i) => ({ phase: i * 0.38 }));
+  (function draw() {
+    if (!tk.alive) return; t += .01; ctx.clearRect(0, 0, cv.width, cv.height);
+    waves.forEach(w => {
+      const r = ((t + w.phase) % 2.5) / 2.5;
+      const radius = r * Math.max(cv.width, cv.height) * .78;
+      const alpha = (1 - r) * .55;
+      ctx.strokeStyle = `rgba(200,40,26,${alpha})`;
+      ctx.lineWidth = 1.5 + (1 - r) * 1.5;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+    });
+    // 中心红点
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 60);
+    g.addColorStop(0, 'rgba(200,40,26,.45)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, 60, 0, Math.PI * 2); ctx.fill();
+    requestAnimationFrame(draw);
+  })();
+}
+
+// S01 入局 — 数字雨（价格数字从天而降）
+function priceRain(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken();
+  const nums = ['799','3650','10000','￥','¥','—','IP','营'];
+  const cols = Array.from({ length: 30 }, () => ({
+    x: Math.random() * cv.width,
+    y: -Math.random() * cv.height,
+    speed: .8 + Math.random() * 1.4,
+    txt: nums[Math.floor(Math.random() * nums.length)],
+    a: .12 + Math.random() * .22,
+    size: 14 + Math.floor(Math.random() * 22),
+  }));
+  (function draw() {
+    if (!tk.alive) return;
+    ctx.fillStyle = 'rgba(7,7,7,.25)';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    cols.forEach(c => {
+      ctx.globalAlpha = c.a; ctx.fillStyle = 'rgba(200,40,26,1)';
+      ctx.font = `bold ${c.size}px "JetBrains Mono",monospace`;
+      ctx.fillText(c.txt, c.x, c.y);
+      c.y += c.speed;
+      if (c.y > cv.height + 30) { c.y = -30; c.x = Math.random() * cv.width; }
+    });
+    ctx.globalAlpha = 1; requestAnimationFrame(draw);
+  })();
+}
+
+// S02 地域 — 横线扫描（雷达/定位感）
+function scanLines(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  (function draw() {
+    if (!tk.alive) return; t += .014; ctx.clearRect(0, 0, cv.width, cv.height);
+    // 网格线
+    ctx.strokeStyle = 'rgba(237,232,223,.07)'; ctx.lineWidth = 1;
+    for (let x = 0; x < cv.width; x += cv.width / 20) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke();
+    }
+    for (let y = 0; y < cv.height; y += cv.height / 12) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke();
+    }
+    // 移动扫描线
+    const sy = ((t * 0.35) % 1) * cv.height;
+    const grad = ctx.createLinearGradient(0, sy - 50, 0, sy + 50);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(.4, 'rgba(200,40,26,.35)');
+    grad.addColorStop(.5, 'rgba(200,40,26,.55)');
+    grad.addColorStop(.6, 'rgba(200,40,26,.35)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad; ctx.fillRect(0, sy - 50, cv.width, 100);
+    // 定位点
+    [[.18,.42],[.74,.60]].forEach(([rx, ry], i) => {
+      const px = rx * cv.width, py = ry * cv.height;
+      const pulse = Math.abs(Math.sin(t * 2.2 + i * 1.5));
+      ctx.strokeStyle = `rgba(200,40,26,${.5 + pulse * .4})`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(px, py, 5 + pulse * 12, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(200,40,26,.9)';
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    });
+    // 连线
+    ctx.strokeStyle = `rgba(200,40,26,${.15 + Math.sin(t * .8) * .1})`;
+    ctx.setLineDash([8, 12]); ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(.18 * cv.width, .42 * cv.height);
+    ctx.lineTo(.74 * cv.width, .60 * cv.height);
+    ctx.stroke(); ctx.setLineDash([]);
+    requestAnimationFrame(draw);
+  })();
+}
+
+// S03 苏醒 — 脑波线（从平静到激活）
+function brainWave(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  (function draw() {
+    if (!tk.alive) return; t += .025; ctx.clearRect(0, 0, cv.width, cv.height);
+    const lines = [
+      { y: .3, amp: 12 + Math.sin(t * .35) * 6,  freq: .010, col: 'rgba(237,232,223,.18)', w: 1 },
+      { y: .5, amp: 28 + Math.sin(t * .55) * 18, freq: .016, col: 'rgba(200,40,26,.45)',   w: 2 },
+      { y: .7, amp: 18 + Math.sin(t * .75) * 10, freq: .022, col: 'rgba(237,232,223,.22)', w: 1 },
+    ];
+    lines.forEach(l => {
+      ctx.strokeStyle = l.col; ctx.lineWidth = l.w;
+      ctx.beginPath();
+      for (let x = 0; x < cv.width; x += 2) {
+        const spike = Math.exp(-Math.pow((x / cv.width - .5) * 4.5, 2)) * 3.5;
+        const y = l.y * cv.height + Math.sin(x * l.freq + t) * l.amp * (1 + spike);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    });
+    // 中心高光
+    const peak = Math.max(0, Math.cos(t * 2.2));
+    if (peak > .4) {
+      const g = ctx.createRadialGradient(cv.width / 2, cv.height / 2, 0, cv.width / 2, cv.height / 2, 120);
+      g.addColorStop(0, `rgba(200,40,26,${(peak - .4) * .35})`);
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cv.width / 2, cv.height / 2, 120, 0, Math.PI * 2); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  })();
+}
+
+// S04 行动 — 放射线爆发（出发 / 起飞感）
+function burstRays(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  const NUM = 28;
+  const rays = Array.from({ length: NUM }, (_, i) => ({
+    angle: (i / NUM) * Math.PI * 2,
+    speed: .25 + Math.random() * .5,
+    phase: Math.random() * Math.PI * 2,
+  }));
+  (function draw() {
+    if (!tk.alive) return; t += .012; ctx.clearRect(0, 0, cv.width, cv.height);
+    const cx = cv.width * .4, cy = cv.height * .55;
+    rays.forEach(r => {
+      const brightness = .4 + Math.sin(t * r.speed + r.phase) * .35;
+      const len = cv.width * (.45 + Math.sin(t * r.speed * .7 + r.phase) * .15);
+      const ex = cx + Math.cos(r.angle + t * .06) * len;
+      const ey = cy + Math.sin(r.angle + t * .06) * len;
+      const grad = ctx.createLinearGradient(cx, cy, ex, ey);
+      grad.addColorStop(0, `rgba(200,40,26,${brightness * .7})`);
+      grad.addColorStop(.4, `rgba(200,40,26,${brightness * .25})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.strokeStyle = grad; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+    });
+    // 中心爆裂光晕
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
+    glow.addColorStop(0, 'rgba(200,40,26,.55)');
+    glow.addColorStop(.4, 'rgba(200,40,26,.12)');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, 100, 0, Math.PI * 2); ctx.fill();
+    requestAnimationFrame(draw);
+  })();
+}
+
+// S05 坚持 — 心跳律动
+function heartbeat(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  (function draw() {
+    if (!tk.alive) return; t += .02; ctx.clearRect(0, 0, cv.width, cv.height);
+    const mid = cv.height * .5;
+    // 背景细线（平静线）
+    ctx.strokeStyle = 'rgba(237,232,223,.12)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x < cv.width; x += 3) {
+      const y = mid + Math.sin(x * .008 + t * .3) * 5;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // 主心跳线（QRS 样式）
+    const beatCycle = (t * 1.8) % (Math.PI * 2);
+    ctx.strokeStyle = 'rgba(200,40,26,.75)'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < cv.width; x += 2) {
+      const nx = x / cv.width;
+      const phase = nx * Math.PI * 6 - t * 1.8;
+      const baseLat = Math.sin(phase) * 6;
+      // QRS spike at beat center
+      const beatPos = (beatCycle / (Math.PI * 2));
+      const dist = Math.abs(nx - beatPos);
+      const qrs = dist < .08 ? Math.exp(-(dist * 60) * (dist * 60)) * 90 : 0;
+      const y = mid + baseLat - qrs;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // 波峰光晕
+    const beatPos2 = (beatCycle / (Math.PI * 2));
+    const dotX = beatPos2 * cv.width;
+    const g = ctx.createRadialGradient(dotX, mid - 45, 0, dotX, mid - 45, 55);
+    g.addColorStop(0, 'rgba(200,40,26,.5)');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(dotX, mid - 45, 55, 0, Math.PI * 2); ctx.fill();
+    requestAnimationFrame(draw);
+  })();
+}
+
+// S06 FOMO — 效果A：终端代码流（原版）
+function terminalStream(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken();
+  const chars = '01ABCDEFGPTAPIJSONHTMLCSSclaudecodex{}[]→←↑↓░▓█■';
+  const colCount = Math.floor(cv.width / 18);
+  const cols = Array.from({ length: colCount }, (_, ci) => ({
+    x: ci * 18 + 9,
+    y: Math.random() * cv.height,
+    speed: .8 + Math.random() * 2,
+    trail: Array.from({ length: 16 }, () => chars[Math.floor(Math.random() * chars.length)]),
+  }));
+  (function draw() {
+    if (!tk.alive) return;
+    ctx.fillStyle = 'rgba(4,4,4,.22)';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    cols.forEach(c => {
+      c.trail.forEach((ch, ti) => {
+        const alpha = ti === 0 ? .85 : (1 - ti / c.trail.length) * .28;
+        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.fillStyle = ti === 0 ? '#ede8df' : ti < 3 ? 'rgba(200,40,26,1)' : 'rgba(200,40,26,.7)';
+        ctx.font = `${ti === 0 ? 'bold ' : ''}14px "JetBrains Mono",monospace`;
+        ctx.fillText(ch, c.x, c.y - ti * 18);
+      });
+      if (Math.random() < .06) c.trail[0] = chars[Math.floor(Math.random() * chars.length)];
+      if (Math.random() < .03) for (let i = 1; i < c.trail.length; i++) {
+        if (Math.random() < .3) c.trail[i] = chars[Math.floor(Math.random() * chars.length)];
+      }
+      c.y += c.speed;
+      if (c.y - c.trail.length * 18 > cv.height) c.y = -18;
+    });
+    ctx.globalAlpha = 1; requestAnimationFrame(draw);
+  })();
+}
+
+// （效果B-D 见 skill.md §25 通用特效库 — dataExplosion / circuitGrow / glitchStorm）
+
+// S07 看到之后 — 暖光粒子向心聚拢
+function convergence(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken(); let t = 0;
+  const cx = cv.width / 2, cy = cv.height / 2;
+  const ps = Array.from({ length: 80 }, () => {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 150 + Math.random() * 380;
+    return { angle, dist, phase: Math.random() * Math.PI * 2, r: 1.5 + Math.random() * 2.5 };
+  });
+  (function draw() {
+    if (!tk.alive) return; t += .012; ctx.clearRect(0, 0, cv.width, cv.height);
+    // 中心暖光晕
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 200);
+    glow.addColorStop(0, 'rgba(194,132,58,.18)');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, 200, 0, Math.PI * 2); ctx.fill();
+    // 粒子
+    ps.forEach(p => {
+      const drift = Math.sin(t * .8 + p.phase) * 15;
+      const x = cx + Math.cos(p.angle + t * .04) * (p.dist + drift);
+      const y = cy + Math.sin(p.angle + t * .04) * (p.dist + drift) * .7;
+      const a = .35 + Math.sin(t * 1.2 + p.phase) * .25;
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = 'rgba(194,132,58,1)';
+      ctx.beginPath(); ctx.arc(x, y, p.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1; requestAnimationFrame(draw);
+  })();
+}
+
+// S08 片尾 — 星空漂移
+function starDrift(id) {
+  const cv = initCanvas(id); if (!cv) return;
+  const ctx = cv.getContext('2d'), tk = loopToken();
+  const stars = Array.from({ length: 180 }, () => ({
+    x: Math.random() * cv.width, y: Math.random() * cv.height,
+    r: .5 + Math.random() * 2, a: .18 + Math.random() * .55,
+    vx: (Math.random() - .5) * .2, vy: (Math.random() - .5) * .2,
+    twinkle: Math.random() * Math.PI * 2,
+  }));
+  let t = 0;
+  (function draw() {
+    if (!tk.alive) return; t += .018; ctx.clearRect(0, 0, cv.width, cv.height);
+    stars.forEach(s => {
+      s.x += s.vx; s.y += s.vy;
+      if (s.x < 0) s.x = cv.width; if (s.x > cv.width) s.x = 0;
+      if (s.y < 0) s.y = cv.height; if (s.y > cv.height) s.y = 0;
+      const tw = s.a * (.55 + .45 * Math.sin(t * 1.5 + s.twinkle));
+      ctx.globalAlpha = tw; ctx.fillStyle = 'rgba(237,232,223,1)';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1; requestAnimationFrame(draw);
+  })();
+}
+
+// ── Flash ────────────────────────────────────────────────────────
+function flash(shotId, dur = .22) {
+  const shot = $(shotId); if (!shot) return;
+  let fl = shot.querySelector('.flash-el');
+  if (!fl) { fl = document.createElement('div'); fl.className = 'flash-el'; shot.appendChild(fl); }
+  G.to(fl, { opacity: .65, duration: .04, ease: 'power2.in', onComplete: () => G.to(fl, { opacity: 0, duration: dur, ease: 'power2.out' }) });
+}
+function superFlash(shotId, opacity = .88, fadeDur = .45, ease = 'power3.out') {
+  const shot = $(shotId); if (!shot) return;
+  let fl = shot.querySelector('.flash-el');
+  if (!fl) { fl = document.createElement('div'); fl.className = 'flash-el'; shot.appendChild(fl); }
+  G.to(fl, { opacity, duration: .03, ease: 'none', onComplete: () => G.to(fl, { opacity: 0, duration: fadeDur, ease }) });
+}
+function screenShake(intensity = 3) {
+  G.to('.stage', { x: -intensity * 3, duration: .05, ease: 'none',
+    onComplete: () => G.to('.stage', { x: intensity * 2.5, duration: .05, ease: 'none',
+      onComplete: () => G.to('.stage', { x: -intensity * 2, duration: .04, ease: 'none',
+        onComplete: () => G.to('.stage', { x: intensity * 1.2, duration: .04, ease: 'none',
+          onComplete: () => G.to('.stage', { x: 0, duration: .06, ease: 'power2.out' })
+        })
+      })
+    })
+  });
+}
+
+// ── Transition ───────────────────────────────────────────────────
+function transition(id, enterFn) {
+  if (transitioning) return; transitioning = true;
+  G.to(curtain, { opacity: 1, duration: .25, ease: 'power2.in', onComplete: () => {
+    document.querySelectorAll('.shot.on').forEach(el => el.classList.remove('on'));
+    killLoops();
+    const el = $(id); if (el) el.classList.add('on');
+    syncCanvases();
+    if (enterFn) enterFn();
+    G.to(curtain, { opacity: 0, duration: .5, ease: 'power2.out', delay: .05,
+      onComplete: () => { transitioning = false; }
+    });
+  }});
+}
+
+// ── HUD ──────────────────────────────────────────────────────────
+const stampTime = $('stampTime');
+function updateTime(t) {
+  const m = String(Math.floor(t / 60)).padStart(2, '0');
+  const s = String(Math.floor(t % 60)).padStart(2, '0');
+  stampTime.textContent = m + ':' + s;
+}
+function updateProgress() { progressBar.style.width = (fakeTime / totalDuration * 100) + '%'; }
+
+// ── Pause ────────────────────────────────────────────────────────
+pauseBtn.addEventListener('click', () => {
+  paused = !paused; pauseBtn.textContent = paused ? '▶' : '⏸';
+  paused ? pauseBGM() : resumeBGM();
+});
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && startOverlay.classList.contains('hidden')) {
+    e.preventDefault(); paused = !paused; pauseBtn.textContent = paused ? '▶' : '⏸';
+    paused ? pauseBGM() : resumeBGM();
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+//  SCENES
+// ════════════════════════════════════════════════════════════════
+
+function S0() {
+  // 情绪锚：注视 / 降临 — 波纹从黑暗中浮现，标题如一道判决落下
+  transition('s0', () => {
+    ripplesCanvas('c0');
+    G.fromTo('.s0 .ghost00', { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power1.out' });
+    // wall 先出现，切割画面
+    G.fromTo('#s0wall', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .35, ease: 'power4.out' });
+    // 标题从远处坠落 — scale 1.5→1，blur大→清晰，有重量感
+    G.fromTo('#s0-title', { opacity: 0, filter: 'blur(28px)', y: -40, scale: 1.5 },
+      { opacity: 1, filter: 'blur(0px)', y: 0, scale: 1, duration: .55, delay: .5, ease: 'power4.out' });
+    // 落地瞬间闪光 — 这是S0的最重要时刻
+    G.delayedCall(.5, () => flash('s0', .3));
+    // subtitle 轻柔跟上
+    G.fromTo('#s0-sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .7, delay: 1.5, ease: 'power2.out' });
+    // 年份标记最后出现，呼吸感
+    G.fromTo('#s0-num', { opacity: 0 }, { opacity: 1, duration: .6, delay: 2.6 });
+  });
+}
+
+function S1() {
+  // 情绪锚：选择 / 压力 — 三档价格是三道墙，选799是一个承认自己的时刻
+  transition('s1', () => {
+    priceRain('c1');
+    G.fromTo('.s1 .ghost01', { opacity: 0 }, { opacity: 1, duration: .5 });
+    G.fromTo('#s1wall', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .3, ease: 'power4.out' });
+    G.fromTo('#s1-top', { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: .28, delay: .1, ease: 'power3.out' });
+    // 三个价格像三道判决砸下 — 间距更短，压迫感更强
+    const priceEls = ['#s1-p1','#s1-sep1','#s1-p2','#s1-sep2','#s1-p3'];
+    priceEls.forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, y: 80, scale: 1.4 }, { opacity: 1, y: 0, scale: 1, duration: .28, delay: .35 + i * .18, ease: 'power4.out' });
+    });
+    // 选择时刻：闪光 + 799变红 + 另外两个数字消失
+    // 这是S1最重要的时刻 — 一个人面对钱包说"就这个吧"的瞬间
+    G.delayedCall(1.6, () => {
+      flash('s1', .35);
+      // 799轻微震动（犹豫感）
+      G.to('#s1-p1', { x: -6, duration: .05, ease: 'none', onComplete: () =>
+        G.to('#s1-p1', { x: 4, duration: .05, ease: 'none', onComplete: () =>
+          G.to('#s1-p1', { x: -3, duration: .04, ease: 'none', onComplete: () =>
+            G.to('#s1-p1', { x: 0, duration: .04 })
+          })
+        })
+      });
+      G.delayedCall(.08, () => {
+        $('s1-p1').classList.add('chosen');
+        G.to('#s1-p2', { opacity: .04, duration: .18 });
+        G.to('#s1-sep1', { opacity: .04, duration: .18 });
+        G.to('#s1-sep2', { opacity: .04, duration: .18 });
+        G.to('#s1-p3', { opacity: .04, duration: .18 });
+      });
+    });
+    // 注解出现 — 有点自嘲，有点坦诚
+    G.fromTo('#s1-note', { opacity: 0 }, { opacity: 1, duration: .55, delay: 3.0 });
+    // 但至少我上车了 — 带点骄傲的从左侧入场
+    G.fromTo('#s1-sub', { opacity: 0, x: -45 }, { opacity: 1, x: 0, duration: .55, delay: 4.5, ease: 'back.out(1.5)' });
+  });
+}
+
+function S2() {
+  // 情绪锚：隔绝 / 距离 — 4071公里不是数字，是一堵墙
+  // 最危险的一句话："就这样吧，也不错。" 这是整个场景的闪光点
+  transition('s2', () => {
+    scanLines('c2');
+    G.fromTo('.s2 .ghost02', { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: .65 });
+    G.fromTo('#s2wall', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .3, ease: 'power4.out' });
+    G.fromTo('#s2-loc', { opacity: 0, letterSpacing: '.9em' }, { opacity: 1, letterSpacing: '.5em', duration: .38, delay: .15 });
+    // 4071 — 数字本身就是重量，直接重锤砸入
+    G.fromTo('#s2-dist', { opacity: 0, scale: 1.6, x: -100, filter: 'blur(8px)' },
+      { opacity: 1, scale: 1, x: 0, filter: 'blur(0px)', duration: .42, delay: .45, ease: 'power4.out' });
+    G.delayedCall(.45, () => flash('s2', .2));
+    G.fromTo('#s2-unit', { opacity: 0 }, { opacity: 1, duration: .3, delay: 1.1 });
+    // 右侧面板 — 描述隔绝的处境，有克制的悲凉
+    G.fromTo('#s2-ladder', { opacity: 0, scale: .4, rotation: -20 }, { opacity: 1, scale: 1, rotation: 0, duration: .4, delay: 1.6, ease: 'back.out(2)' });
+    G.fromTo('#s2-copy', { opacity: 0, x: 28 }, { opacity: 1, x: 0, duration: .55, delay: 2.5, ease: 'power2.out' });
+    // "就这样吧，也不错。" — 最危险的那句话，专属强闪光
+    // 这句话是放弃的开始，所以要让观众感受到危险
+    G.fromTo('#s2-danger', { opacity: 0, y: 28, scale: .95 }, { opacity: 1, y: 0, scale: 1, duration: .5, delay: 4.8, ease: 'back.out(1.5)' });
+    G.delayedCall(4.8, () => flash('s2', .4));
+    G.to('#s2-slash', { scaleX: 1, duration: .5, delay: 6.0, ease: 'power4.out' });
+  });
+}
+
+function S3() {
+  // 情绪锚：松动 — 同一句话重复三遍，第三遍才是觉醒
+  // 关键原则：重复之间必须有真正的沉默，让观众感受到时间在流逝
+  // 第三遍出现 = 全片唯一的静默闪光时刻
+  transition('s3', () => {
+    brainWave('c3');
+    G.fromTo('.s3 .ghost03', { opacity: 0 }, { opacity: 1, duration: .8, ease: 'power1.out' });
+    G.fromTo('#s3-date', { opacity: 0, letterSpacing: '.9em' }, { opacity: 1, letterSpacing: '.5em', duration: .38, delay: .2 });
+    // 第一遍 — 暗淡，几乎是无意识的
+    G.fromTo('#s3-r1', { opacity: 0, x: -35 }, { opacity: 1, x: 0, duration: .32, delay: .8, ease: 'power2.out' });
+    // 沉默 1.4秒 — 什么都没有发生
+    // 第二遍 — 稍亮，有点在意了
+    G.fromTo('#s3-r2', { opacity: 0, x: -45 }, { opacity: 1, x: 0, duration: .34, delay: 2.8, ease: 'power3.out' });
+    // 沉默 1.8秒 — 更长的停顿，像大脑在运转
+    // 第三遍 — 全亮，突破，带scale弹入，这就是觉醒
+    G.fromTo('#s3-r3', { opacity: 0, x: -65, scale: 1.12, filter: 'blur(4px)' },
+      { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: .42, delay: 5.2, ease: 'back.out(2)' });
+    // 仅此处闪光 — 第三遍是全场景的高峰
+    G.delayedCall(5.2, () => flash('s3', .32));
+    // 结论句 — blur消散，像雾中看清了什么
+    G.fromTo('#s3-em', { opacity: 0, y: 30, filter: 'blur(10px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: .8, delay: 7.0, ease: 'power2.out' });
+    G.to('#s3-slash', { scaleX: 1, duration: .5, delay: 8.5, ease: 'power4.out' });
+  });
+}
+
+function S4() {
+  // 情绪锚：爆发 — "我必须去" 是全片最重要的一句话
+  // 这是改变命运的决定，用全片最大的闪光 + 屏幕震动来标记
+  transition('s4', () => {
+    burstRays('c4');
+    G.fromTo('.s4 .ghost04', { opacity: 0 }, { opacity: 1, duration: .5 });
+    G.fromTo('#s4wall', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .3, ease: 'power4.out' });
+    G.fromTo('#s4-km', { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: .3, delay: .2, ease: 'power3.out' });
+    // 三个借口慢慢现身 — 它们是被打倒的对象
+    ['#s4-r1','#s4-r2','#s4-r3'].forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .28, delay: .55 + i * .3, ease: 'power2.out' });
+    });
+    // "我必须去" — 全片最重要的时刻
+    // scale 2.0→1 + 超大模糊→清晰，像从远处冲来
+    G.fromTo('#s4-trigger', { opacity: 0, scale: 2.0, x: -80, filter: 'blur(20px)' },
+      { opacity: 1, scale: 1, x: 0, filter: 'blur(0px)', duration: .5, delay: 2.2, ease: 'power4.out' });
+    // 全片最大闪光（opacity .88）+ 屏幕震动
+    G.delayedCall(2.2, () => { superFlash('s4', .88, .45, 'power3.out'); screenShake(3); });
+    G.fromTo('#s4-sub', { opacity: 0, y: 15, filter: 'blur(4px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: .6, delay: 4.0, ease: 'power2.out' });
+  });
+}
+
+function S5() {
+  // 情绪锚：稳定 / 积累 — 三个动作像三声心跳，有节律，有重量
+  // 图标不是装饰，它们是承诺的具象化
+  transition('s5', () => {
+    heartbeat('c5');
+    G.fromTo('.s5 .ghost05', { opacity: 0 }, { opacity: 1, duration: .7 });
+    G.fromTo('#s5-month', { opacity: 0, letterSpacing: '.9em' }, { opacity: 1, letterSpacing: '.52em', duration: .4, delay: .2 });
+    // 三个行动像三声鼓点砸下 — 间隔0.5s，让每一个都有回响
+    // 每个进场时轻微弹跳，像真实的身体动作
+    G.fromTo('#s5-a1', { opacity: 0, y: 65, scale: .7 },
+      { opacity: 1, y: 0, scale: 1, duration: .42, delay: .9, ease: 'back.out(2.5)' });
+    G.delayedCall(.9, () => flash('s5', .12));
+    G.fromTo('#s5-a2', { opacity: 0, y: 65, scale: .7 },
+      { opacity: 1, y: 0, scale: 1, duration: .42, delay: 1.5, ease: 'back.out(2.5)' });
+    G.delayedCall(1.5, () => flash('s5', .12));
+    G.fromTo('#s5-a3', { opacity: 0, y: 65, scale: .7 },
+      { opacity: 1, y: 0, scale: 1, duration: .42, delay: 2.1, ease: 'back.out(2.5)' });
+    G.delayedCall(2.1, () => flash('s5', .15));
+    // 三个都到位后，说明这件事的重量
+    G.fromTo('#s5-note', { opacity: 0, y: 18, filter: 'blur(4px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: .6, delay: 3.2, ease: 'power2.out' });
+    G.to('#s5-slash', { scaleX: 1, duration: .5, delay: 5.0, ease: 'power4.out' });
+  });
+}
+
+function S6() {
+  // 情绪锚：上瘾 — 工具链是一个越来越大的世界在打开
+  // 每个工具的出现都是"发现"，不是"罗列"
+  // 最后那句话才是真正的上瘾本质
+  // 切换效果：terminalStream | dataExplosion | circuitGrow | glitchStorm
+  const S6_EFFECT = terminalStream;
+  transition('s6', () => {
+    S6_EFFECT('c6');
+    G.fromTo('.s6 .ghost06', { opacity: 0 }, { opacity: 1, duration: .6 });
+    G.fromTo('#s6wall', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .32, ease: 'power4.out' });
+    G.fromTo('#s6-label', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .28, delay: .18 });
+    // "群里" 先入场，带一点期待感
+    G.fromTo('#s6-big', { opacity: 0, x: -55, scale: 1.15 }, { opacity: 1, x: 0, scale: 1, duration: .38, delay: .45, ease: 'back.out(1.5)' });
+    // "都有了" — 强烈的FOMO核心词，blood red，大字砸入
+    G.fromTo('#s6-big2', { opacity: 0, x: -100, scale: 1.4, filter: 'blur(8px)' },
+      { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: .45, delay: 1.3, ease: 'power4.out' });
+    G.delayedCall(1.3, () => flash('s6', .28));
+    // 工具链 — 每个都像新大陆被发现，稍微慢一点让每个有存在感
+    // row 1：第一条工具链
+    ['#s6-t1','#s6-a1','#s6-t2','#s6-a2','#s6-t3'].forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, x: -28, y: -8 }, { opacity: 1, x: 0, y: 0, duration: .3, delay: 3.2 + i * .28, ease: 'back.out(2)' });
+    });
+    // row 2 更长，世界在扩张
+    ['#s6-t4','#s6-a3','#s6-t5','#s6-a4','#s6-t6','#s6-a5','#s6-t7'].forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, x: -28, y: -8 }, { opacity: 1, x: 0, y: 0, duration: .28, delay: 4.8 + i * .24, ease: 'back.out(2)' });
+    });
+    // 最后的上瘾告白 — 这是场景的真正高峰，带blur消散入场
+    G.fromTo('#s6-addict', { opacity: 0, y: 25, filter: 'blur(8px)' },
+      { opacity: 1, y: 0, filter: 'blur(0px)', duration: .75, delay: 8.0, ease: 'power2.out' });
+    G.delayedCall(8.0, () => flash('s6', .22));
+    G.to('#s6-slash', { scaleX: 1, duration: .5, delay: 10.5, ease: 'power4.out' });
+  });
+}
+
+function S7() {
+  // 情绪锚：转化 — 同一个FOMO，以前是锁链，现在是燃料
+  // 两句对比句需要颜色+位置上的强烈反差
+  // c1（blood red停住）vs c2（warm gold开始）是全场景的核心张力
+  transition('s7', () => {
+    convergence('c7');
+    G.fromTo('.s7 .ghost07', { opacity: 0 }, { opacity: 1, duration: .8 });
+    G.fromTo('#s7-jlabel', { opacity: 0, letterSpacing: '.9em' }, { opacity: 1, letterSpacing: '.48em', duration: .38, delay: .2 });
+    // 旅程四个阶段依次点亮 — 像回放记忆
+    ['#s7-j1','#s7-j2','#s7-j3','#s7-j4'].forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, x: -35 }, { opacity: 1, x: 0, duration: .35, delay: .5 + i * .65, ease: 'power3.out' });
+      G.delayedCall(.5 + i * .65 + .12, () => {
+        const el = document.querySelector(sel);
+        if (i < 3) el.classList.add('lit');
+        if (i === 3) { el.classList.add('peak'); flash('s7', .18); }
+      });
+    });
+    // 分隔线拉出 — 是一道门槛
+    G.fromTo('#s7-div', { opacity: 0, scaleY: 0 }, { opacity: 1, scaleY: 1, duration: .5, delay: 3.2, ease: 'power3.out', transformOrigin: 'center' });
+    // c1："以前的FOMO让我停住" — blood red的"停住"从右侧重击入场
+    G.fromTo('#s7-c1', { opacity: 0, x: 45, filter: 'blur(5px)' },
+      { opacity: 1, x: 0, filter: 'blur(0px)', duration: .45, delay: 4.0, ease: 'power4.out' });
+    // 停顿1.6s — 让血色的"停住"沉淀
+    // c2："现在的FOMO提醒我开始" — warm gold的"开始"从右侧涌入，更快更有力
+    G.fromTo('#s7-c2', { opacity: 0, x: 55, scale: 1.05, filter: 'blur(5px)' },
+      { opacity: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: .5, delay: 5.8, ease: 'power4.out' });
+    // c2出现时闪光 — 转化时刻
+    G.delayedCall(5.8, () => flash('s7', .28));
+    // 结尾 finale — "看到之后——别停在害怕里" 从blur中升起
+    G.fromTo('#s7-finale', { opacity: 0, y: 38, filter: 'blur(12px)', scale: .96 },
+      { opacity: 1, y: 0, filter: 'blur(0px)', scale: 1, duration: 1.0, delay: 8.5, ease: 'power2.out' });
+  });
+}
+
+function S8() {
+  // 情绪锚：沉淀 — 五个"看到"是回顾，最终标题是答案
+  // 这是全片最大的闪光时刻 — 最后一句话，全片的重心
+  transition('s8', () => {
+    starDrift('c8');
+    G.fromTo('.s8 .ghost08', { opacity: 0 }, { opacity: 1, duration: 1.0, ease: 'power1.out' });
+    G.to('#s8-slash', { scaleX: 1, duration: .55, delay: .25, ease: 'power4.out' });
+    // 五个"看到"一行一行浮上来 — 间距缩短让节奏更紧凑
+    ['#s8-l1','#s8-l2','#s8-l3','#s8-l4','#s8-l5'].forEach((sel, i) => {
+      G.fromTo(sel, { opacity: 0, y: 18, filter: 'blur(4px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', duration: .5, delay: .5 + i * .7, ease: 'power2.out' });
+    });
+    // 全片最大闪光：最终标题出现的瞬间
+    G.fromTo('#s8-title', { opacity: 0, letterSpacing: '.05em', filter: 'blur(20px)', scale: .85 },
+      { opacity: 1, letterSpacing: '.55em', filter: 'blur(0px)', scale: 1, duration: 1.5, delay: 5.0, ease: 'power2.out' });
+    G.delayedCall(5.0, () => superFlash('s8', .95, .6, 'power2.out'));
+    // 标题显示 3s 后出现收尾文案 — 让结尾有余韵
+    G.fromTo('#s8-outro', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .7, delay: 8.5, ease: 'power2.out' });
+  });
+}
+
+// ── CUE TABLE ────────────────────────────────────────────────────
+const CUES = [
+  { at: 0,   fn: S0 },   // 片头      0-5s
+  { at: 5,   fn: S1 },   // 入局      5-17s
+  { at: 17,  fn: S2 },   // 地域      17-30s
+  { at: 30,  fn: S3 },   // 苏醒      30-40s
+  { at: 40,  fn: S4 },   // 行动      40-53s
+  { at: 53,  fn: S5 },   // 坚持      53-62s
+  { at: 62,  fn: S6 },   // FOMO      62-78s
+  { at: 78,  fn: S7 },   // 看到之后  78-98s
+  { at: 98,  fn: S8 },   // 片尾      98-130s
+];
+
+// ── Main loop ────────────────────────────────────────────────────
+function tick() {
+  if (paused) { requestAnimationFrame(tick); return; }
+  fakeTime += 1 / 60;
+  updateTime(fakeTime); updateProgress();
+  for (let i = CUES.length - 1; i >= 0; i--) {
+    if (fakeTime >= CUES[i].at) {
+      if (i !== lastCueIdx) { lastCueIdx = i; CUES[i].fn(); }
+      break;
+    }
+  }
+  if (fakeTime >= totalDuration) {
+    pauseBtn.style.opacity = '0'; pauseBtn.style.pointerEvents = 'none';
+    setTimeout(() => { startOverlay.classList.remove('hidden'); $('startBtn').textContent = '↺ 重新播放'; }, 2000);
+    return;
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Start ────────────────────────────────────────────────────────
+$('startBtn').addEventListener('click', () => {
+  playBGM();
+  startOverlay.classList.add('hidden');
+  pauseBtn.style.opacity = '1'; pauseBtn.style.pointerEvents = 'auto';
+  fakeTime = 0; lastCueIdx = -1;
+  CUES[0].fn(); tick();
+});
+
+window.addEventListener('resize', syncCanvases);
+</script>
+</body>
+</html>

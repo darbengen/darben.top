@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>归来</title>
+<style>
+  :root {
+    --paper: #f7f3eb;
+    --ink: #2a1f14;
+    --ink-mid: #5b4a38;
+    --ink-light: #8a7a68;
+    --rose: #b8706a;
+    --rose-dim: rgba(184,112,106,0.18);
+    --jade: #7d8f7d;
+    --gold: #b8a06a;
+    --rule: #d9d0be;
+    --rule-light: #e5dfd2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #ede7db;
+    color: var(--ink);
+    font-family: 'Noto Serif SC', 'STSong', 'Songti SC', 'SimSun', Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1;
+    background-image:
+      radial-gradient(ellipse at 20% 15%, rgba(184,112,106,0.025) 0%, transparent 55%),
+      radial-gradient(ellipse at 75% 60%, rgba(125,143,125,0.02) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 90%, rgba(184,160,106,0.02) 0%, transparent 50%);
+  }
+
+  /* ── 整页容器 ── */
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 100px 48px 120px;
+  }
+
+  /* ── 刊头 ── */
+  .masthead {
+    text-align: center;
+    margin-bottom: 72px;
+  }
+  .masthead .overline {
+    font-size: 9px;
+    letter-spacing: 10px;
+    text-transform: uppercase;
+    color: var(--jade);
+    opacity: 0.5;
+    margin-bottom: 32px;
+  }
+  .masthead .overline span {
+    display: inline-block;
+    padding: 0 14px;
+    position: relative;
+  }
+  .masthead .overline span::before,
+  .masthead .overline span::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 28px;
+    height: 1px;
+    background: var(--rule);
+  }
+  .masthead .overline span::before { right: 100%; }
+  .masthead .overline span::after { left: 100%; }
+  .masthead h1 {
+    font-family: 'STKaiti', 'KaiTi SC', 'KaiTi', 'Noto Serif SC', serif;
+    font-size: 44px;
+    font-weight: 400;
+    letter-spacing: 0.16em;
+    color: var(--ink);
+    margin-bottom: 20px;
+    line-height: 1.2;
+  }
+  .masthead .subtitle {
+    font-size: 14px;
+    color: var(--ink-mid);
+    opacity: 0.7;
+    font-style: italic;
+    letter-spacing: 0.06em;
+    margin-bottom: 28px;
+  }
+  .masthead .rule {
+    width: 48px;
+    height: 1px;
+    background: var(--ink-light);
+    opacity: 0.3;
+    margin: 0 auto 28px;
+  }
+  .masthead .dateline {
+    font-size: 10px;
+    letter-spacing: 6px;
+    color: var(--rose);
+    opacity: 0.45;
+  }
+
+  /* ── 段落区块 ── */
+  .passage {
+    margin-bottom: 64px;
+    position: relative;
+  }
+  .passage p {
+    font-size: 15.5px;
+    line-height: 2.15;
+    color: var(--ink);
+    opacity: 0.82;
+    margin-bottom: 12px;
+    text-indent: 2em;
+    text-align: justify;
+    letter-spacing: 0.01em;
+    word-spacing: 0.02em;
+  }
+  .passage p.lead {
+    text-indent: 0;
+  }
+  .passage p.lead::first-letter {
+    font-family: 'STKaiti', 'KaiTi SC', 'KaiTi', serif;
+    font-size: 48px;
+    float: left;
+    line-height: 0.75;
+    padding-right: 7px;
+    padding-top: 6px;
+    color: var(--ink);
+  }
+
+  /* ── 张式警句 ── */
+  .axiom {
+    margin: 32px 0 32px 32px;
+    padding: 6px 0 6px 18px;
+    border-left: 2px solid var(--rose);
+  }
+  .axiom p {
+    font-family: 'STKaiti', 'KaiTi SC', 'KaiTi', 'Noto Serif SC', serif;
+    font-size: 17px;
+    line-height: 1.95;
+    color: var(--ink) !important;
+    opacity: 0.9 !important;
+    text-indent: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* ── 数字 ── */
+  .fig {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-style: italic;
+    color: var(--rose);
+    opacity: 0.65;
+  }
+
+  /* ── 段落间装饰 ── */
+  .ornament {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    margin: 56px 0;
+    opacity: 0.3;
+  }
+  .ornament .line {
+    flex: 1;
+    max-width: 72px;
+    height: 1px;
+    background: var(--rule);
+  }
+  .ornament .diamond {
+    width: 5px;
+    height: 5px;
+    background: var(--ink-light);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  /* ── 渐显 ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.22,0.61,0.36,1);
+  }
+  .reveal.on { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 640px) {
+    .page { padding: 48px 24px 80px; }
+    .masthead h1 { font-size: 32px; }
+    .passage p { font-size: 14.5px; text-indent: 1.5em; }
+    .passage p.lead::first-letter { font-size: 36px; }
+    .axiom { margin-left: 16px; padding-left: 14px; }
+    .axiom p { font-size: 15.5px; }
+  }
+</style>
+</head>
+<body>
+
+<article class="page">
+
+  <header class="masthead reveal">
+    <div class="overline"><span>散 文</span></div>
+    <h1>归 来</h1>
+    <p class="subtitle">缺席九个月后的一场直播</p>
+    <div class="rule"></div>
+    <p class="dateline">董老师 · 二〇二六年五月十一日 · 夜</p>
+  </header>
+
+  <!-- ═══════════ 一 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">一个人不出现，世界会怎样待他？删了我大半年的数据，我想它教我的比任何一本书都多。</p>
+    <p>去年八月到今年五月，九个月没有直播，没有更新。这大半年里并没有人惦记我——喜欢我的人安安静静，不喜欢我的人也无处下嘴。你都不存在了，骂你有什么趣味呢。世界像一个精明的房东，你走了就把房间清空，绝不白放着等你回来。</p>
+    <p>可一旦重新开口，哪怕只推开一条门缝，那些不喜欢你的人便立刻闻风而来。他们问你从前说过的话为何没有兑现，记得比你自己还清楚。</p>
+    <div class="axiom"><p>喜欢是漫不经心的，恨却是精密仪器。</p></div>
+    <p>于是把这个号交给小助理。往后除了不得不看的那一眼，大抵不看了。不是逃避。是算一笔账——把注意力花在读评论上，产出比太低了。你总不能为卖一盒火柴，跟每个过路的人解释火的原理。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 二 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">刚回来就卖课，别人会怎么想？九个月不见人，一回来便要钱。连我自己都觉得这画面有些难看——像隔了许久的远亲，进门便开口借钱。</p>
+    <p>从前的我，想到这一层便收手了。因为怕。怕人议论，怕那种说不清的尴尬。以恐惧为驱动的选择，做出来的动作总是小心翼翼的，像穿了太紧的新衣，哪里都不自在。</p>
+    <p>这回不同。三条理由，简单得像三根钉子：第一，这门课确实好。可能是我做过的最好的。这件事我自己清楚，像知道自己的鞋码一样不需要向人求证。第二，四小时的直播给出去的东西，早超出票价不知多少倍——听完的人是倒欠我的。第三——</p>
+    <div class="axiom"><p>若连你都不信自己的东西值得在人最鼎沸时推出去，你凭什么让别人信？</p></div>
+    <p>查理·芒格说，全力去做的事倒不成为问题。这一场结果好坏，我都不在意了。卖<span class="fig">5</span>万块也行，<span class="fig">三四十万</span>也行。我只是想尽快撞上那个结果——像闭眼往前跑，总要撞到一面墙，才知道墙究竟在什么位置。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 三 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">我花了一点时间测量凉意。到底彻底凉了，还是微凉，还是还行？</p>
+    <p>一个在网络上曾有过一点姓名的人，离开了七八个月，回来时观众还剩多少——总要亲身试了才知道。结果是：还行。在漫长年月里陪一群人从高中走到大学，毕竟不是白费的。像小时候家里晒被子，傍晚收回来，被子上有太阳的气味。隔了很久去闻，淡了，但还在。</p>
+    <p>我了解你们这群跟了我许久的人，我们之间没有解释成本。但我不了解那半年没见过我的人。他们现在在想什么？对<span class="fig">AI</span>的认识到了哪一步？对自己的生活和前途又是什么态度？像一个许久没去菜场的人，重新站在摊位前，想知道行情变了多少。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 四 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">我一直在说一件事：学会拥抱陌生人。</p>
+    <p>这和许多人从小受的教育相反——大人说，不要和陌生人说话。但一个陌生人就是一个潜在的交易对象。至少是擦肩而过的人。你想一想最坏的情况：今天出门，一个人都碰不到。商店开着门，柜台后面是空的。地铁在跑，车厢里只有你。这种世界是很恐怖的。</p>
+    <p>陌生人之间最高频的关系，是交易。你刷抖音——你消费了他的东西，他拿走了你的注意力。你可能得到一点情绪，一点知识；也可能更狭隘、更极端、更焦虑。不论怎样，这就是你们发生的交互。</p>
+    <div class="axiom"><p>把「交互」等价于「交易」，事情便清爽了。</p></div>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 五 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你跟爸妈之间，自然也是交易。</p>
+    <p>喊声爸爸妈妈，满足一下他们"毕竟有个孩子"的心理，生活费便到手了。情绪价值换人民币，公平。世上许多关系拆开看都是这样，只是大家不说。不说就比较体面，说了就显得难听。但不说，不等于它不是。</p>
+    <p>换个角度，从投资回报看：你至今一分钱没给过他们，中考差，高考差，脾气不好，节日无回馈。你买了一只股票——市值跌光，蒸发殆尽，退市了。但它每天还在跟你要补仓。一月补一次，一年二三十次，逢年过节还得补。它还骂你，闹情绪，不受控制。</p>
+    <div class="axiom"><p>股票被套牢了。股票退市了。你还在补钱。这就是你们的父母。他们挺伟大的。</p></div>
+    <p>所以母亲节我让大家给爸妈做个网站。做网站现在太简单了，几句话的事。父母收到时至少觉得这孩子想到了自己——像冬天忽然收到一双不太合脚的棉拖鞋。不值钱，但有人惦记着你的脚会不会冷。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 六 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你们上大学了，一年寒暑假回去待二三十天。工作了，剩四五天。</p>
+    <p>父母四十几岁——若按人均<span class="fig">80</span>岁算，尚余三十五年。前五年每年多待<span class="fig">15</span>天，后三十年每年<span class="fig">10</span>天。你算算，还能见多少次。</p>
+    <p>别让这个数字使你焦虑。焦虑极容易制造：高三的话术——<span class="fig">365</span>天减周末减寒暑假减睡觉，给你一个吓人的数字。里面必有重复计算，但焦虑中的人从不检查算术。所以倒计时只宜偶尔使用，像药，不能当饭。多数时候你该活在乐观里。做好最坏的打算，然后尽最大可能去创造最好的。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 七 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你们现在的状态，几乎是最差的。要钱没有。要自由——自由倒是多，但控制不住，等于没有。学历呢？普通一本，普通<span class="fig">211</span>。</p>
+    <div class="axiom"><p>但正因为如此，怎么走都是向上。你只需做一点点对的事，生活便会给你许多反馈。大专？无所谓的。</p></div>
+    <p>我做个预言——可能不太负责：四五年内，学历体系会动摇。<span class="fig">985</span>、<span class="fig">211</span>这套标准将与另一体系并行：你对<span class="fig">AI</span>的使用能力。快则一两年，慢则四五年。大学不过是个容器，把年轻人聚在一起。有人在这里认识了朋友、恋人、伙伴。有人四年过去，什么也没有。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 八 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">最理想的教育是什么？一人拿着<span class="fig">AI</span>，配一到两个导师。</p>
+    <p>导师给你看<span class="fig">AI</span>的可能性，启发你对某些东西的原发兴趣——不是教，是点。课堂可以还在，但你在课堂里跟<span class="fig">AI</span>对话，不停地问。</p>
+    <p><span class="fig">AI</span>做不了导师。以前我以为可以，现在不了。导师要对你这整个人的状态有感知——人格、社会度、情绪。导师需要上下文。而<span class="fig">AI</span>对你生活的捕捉远远不够。导师要足够敏锐，能从一句话里听出你最近怎么了。<span class="fig">AI</span>不会突然弹出来说："你大学该谈谈恋爱了。"你也不会向<span class="fig">AI</span>问出这个问题——</p>
+    <div class="axiom"><p>能成为你盲区的东西，在你价值排序里位置本就很低。你根本不知道你该问什么。</p></div>
+    <p>贵人可以有许多。导师只有一两个。硅谷有导师制——一个人可以找比他大得多的人来带他。分享，开源。中国基本是"我防你，你防我"。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 九 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead"><span class="fig">AI</span>的时代来了。它足以比肩信息革命——后者给中国带来几十万亿的产业升级。比特币不过两万亿美元。<span class="fig">AI</span>的影响，五到十年内是上百万亿的级别。</p>
+    <div class="axiom"><p>用 AI 的人的斜率：↗<br>不用 AI 的人，斜率基本平了：→</p></div>
+    <p>差异的根源不在<span class="fig">AI</span>工具有多强。而在于——你不用<span class="fig">AI</span>时，整个人基本处在"负债"状态。注意力被抖音刮一下，短剧刮一下，小说刮一下，人情世故刮一下，室友呼声再刮一下。你无事可做，便把那些细微不重要的东西放大，用来填时间。填不满的时候，会慌。</p>
+    <p>你玩<span class="fig">AI</span>的时间从哪来？从打飞机的时间里盈余出来的。从看黄片的时间里。从想男人想女人的时间里、<span class="fig">emo</span>的时间里，盈余出来的。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">说到这，索性说透。</p>
+    <p>看黄片——从抖音软色情开始，被触到，欲望上来，点开珍藏。找片半小时到一小时，中间又耗去半小时。日复一日，年<span class="fig">365</span>小时。这还只是"发生到结束"。</p>
+    <p>运动员赛前禁同房。男性运动表现降<span class="fig">40%</span>。博尔特跑<span class="fig">9</span>秒<span class="fig">55</span>，降<span class="fig">40%</span>便跑出<span class="fig">10</span>秒——等于没跑。这不只是那一小时的损耗。</p>
+    <div class="axiom"><p>若发生在早晨，影响的便是整日。多巴胺在高潮中耗尽。血清素、内啡肽也是。后面的时间，不够用了。</p></div>
+    <p>我花一两个月用<span class="fig">AI</span>把人类营养物质梳理了一遍——从葡萄糖到脂肪酸到氨基酸到微量元素。锌缺了，影响皮肤与欲望。镁镇定神经。你若呼吸短促、易心悸、容易"咯噔"——钠钾泵出了问题。补钾：香蕉，老椰子水。别喝太甜的——血糖一波动，注意力涣散，皮质醇升高，前额叶便歇了。</p>
+    <div class="axiom"><p>人生最重要的事很简单：增加前额叶时间，降低杏仁核时间。</p></div>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十一 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你们大部分的时间，是"语言时间"。</p>
+    <p>刷抖音不是在接收新信息——你在循环你自己。靠大量脑补消费内容，情绪上来又下去，记住的极少。因为全是想象，是旧东西在脑子里转圈。</p>
+    <p>但如果你在现实里追过一个人、被拒绝过、赚过钱、做过<span class="fig">IP</span>、跟<span class="fig">AI</span>探索过边界——那些经验有气味，有触觉，有心跳。</p>
+    <div class="axiom"><p>真实的经验增加你的容量。消费内容只是在重复已知。年轻人最大的危险，是不自知地困在语言时间里。</p></div>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十二 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">这期社群是我待过最久的一个。从前的群我不看——全是垃圾。现在我怕错过。</p>
+    <p>每个人都在用他们的眼睛帮我看<span class="fig">AI</span>的可能性。像一群人站在不同窗口前，各自汇报看到了什么。<span class="fig">AI</span>给了你做产品的能力——你随时能做出任何东西。但它没给你找客户的能力。客户、需求、营销，必须跟人类世界发生互动。而跟人类世界互动最有效的途径，就是<span class="fig">IP</span>。</p>
+    <p>我曾抗拒<span class="fig">Claude</span>。三月有人推荐，我说不用，<span class="fig">ChatGPT</span>用得顶呱呱。后来装了——五天后才去找那人道谢，我甚至不确定那句话是不是他说的了。</p>
+    <div class="axiom"><p>但那句话一定增加了我的权重。所以还是去谢了他。人还是要懂感恩——你不知道谁会在下一次给你什么。</p></div>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十三 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">从周二直播完到现在，好几天没好好写文章了。每天跟<span class="fig">AI</span>聊天，做网页，看群里的动静。我意识到我变弱了。</p>
+    <p>纯粹的技术积累，我必积累不过你们——你们用<span class="fig">AI</span>的绝对时间终会超过我。我还有别的事：见人，过生活，想慢一点的东西。跟<span class="fig">AI</span>高频聊天本质上是上瘾。每次给它一句话，你不知它会回什么——与刷短视频如出一辙：轮次密，反馈强，能量猛，情绪高。</p>
+    <div class="axiom"><p>用 AI 搓出一个软件，简单。把它做成视频发出去让人评判，难。找到客户赚十块一百块一千块，难。做难的事。</p></div>
+    <p>比短视频瘾好。比游戏瘾好。比黄色瘾好。但终究是瘾——瘾使人只做简单的事。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十四 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">反复问自己：这是你的杠杆点吗？这是注意力投入产出比最高的地方吗？</p>
+    <p>十九到二十五岁那六年，我对工作上瘾。怎能不上瘾。发一个视频上<span class="fig">B</span>站，几千人看，随便上热门。一条视频带来一到两百万——原视频可能三四百万。日入账<span class="fig">15</span>万以上。多时一天一百多万。<span class="fig">2022</span>年百日规划课发布，单日<span class="fig">137</span>万。</p>
+    <div class="axiom"><p>你们对 9 块 9 开心得不得了。但 9 块 9 的开心和 137 万的开心，本质上是一样的。所有事都从那里开始走。</p></div>
+    <p>做东西从来简单。找到需要它的人，包装它，让他们心甘情愿且持续地给你很多钱——这才是难的。我不能跟你们一样每天做完网站就欢呼。每次欢呼都在消耗我的情绪。我的注意力不该放在这。出去给那些老板讲一讲，回头几十万一百万投资便拉过来了——那才是我的杠杆点。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十五 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你们转我<span class="fig">52</span>块、<span class="fig">99</span>块。收钱都累。</p>
+    <p>那天花了十五分钟一个个点收款，收了一千五。我心想——你们转钱不容易，我有点愧疚。愧疚了就想给更多。可我给的早已超出盈余了。</p>
+    <div class="axiom"><p>这不是善良，是被自己道德绑架。我应该想清楚：注意力花在哪里，能帮到最多的人？</p></div>
+    <p>转头果粒转了两千。我忽然觉得自己很可笑。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十六 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">红果短剧——字节跳动旗下。日活破亿，第五个破亿的产品。人均日使用两小时以上，还在涨。</p>
+    <p>十几路人马找过我合作，本质都是把你们的注意力廉价卖出——点赞三块两块。我在意逼格。但仔细想，多数人不就是天天刷短视频吗？<span class="fig">IP</span>做不起，<span class="fig">AI</span>玩不转，这点时间能换点钱，总比买奶茶强。</p>
+    <p><span class="fig">AI</span>短剧像条电子流水线。坐定，抽卡，剪辑。月入一两万——厉害的四五万。<span class="fig">A</span>级剧几万一部，<span class="fig">S</span>级十几万。他们说上课十五天，四五千。我起初不信。直到往<span class="fig">CDS</span>充了一千块。一下午跑出三四十条——<span class="fig">1080P</span>，<span class="fig">15</span>秒，能看的只有五条。</p>
+    <div class="axiom"><p>一千块，一下午，没了。我信了。Token 真烧钱。</p></div>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十七 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">你们中只有<span class="fig">20%</span>的人当下能变现。剩下<span class="fig">五六十</span>需要学习一两个月——对商业和人性的了解太少了。但斜率已经启动。</p>
+    <p>我唯一真正担心的：群散了，课结了，我不再陪着——你们能不能维持这个斜率？</p>
+    <p>看字节跳动：今日头条起家，做抖音——主动搜索变被动推送。做番茄小说——收割阅读。做红果短剧——收割碎片时间。做豆包——收割<span class="fig">AI</span>对话。视觉，听觉，短，长，文字，语音——每个维度都在收割。豆包免费供着上亿人每天几十次调用。你聊十小时，按<span class="fig">token</span>价一天几十块。即便成本压缩到七八块，乘以上亿——多大的盘。</p>
+    <p>不必有太多道德色彩。多数人放弃注意力是自愿的。或许抖音还降低了犯罪率——没事干要偷鸡摸狗的人，现在至少刷着短视频。但你现在可以搞清楚了。</p>
+    <div class="axiom"><p>你要学会做收割者，而不是被收割者。</p></div>
+    <p>养出一个几十万粉的博主，要多少注意力？他花一万小时做视频。粉丝每日几小时看他——上百万小时被收走。几百倍、几千倍的杠杆。你的时间是值钱的。你放弃了变得更好的时间，注意力还受了永久损伤——只能看短的，全是情绪。情绪再消耗你，让你更疲惫。像一个还不清的债：利息在涨，本金未动。</p>
+  </section>
+
+  <div class="ornament"><span class="line"></span><span class="diamond"></span><span class="line"></span></div>
+
+  <!-- ═══════════ 十八 ═══════════ -->
+  <section class="passage reveal">
+    <p class="lead">我不在意这场直播的结果。后面肯定要回公域了。高考要做，大学也要做。已确定归来。当头一棒？无所谓。冷水一盆？也无所谓。</p>
+    <p>它不再是一个点，而是一段连续的回响。尽快开启便好。尽快撞上那个结果，知道现实与预期差了多少。</p>
+    <div class="axiom"><p>做好最坏的打算，尽最大可能去创造更好的。路过人间，路过伤悲，距离幸福就不远。抬头，让阳光晒干你的脸。</p></div>
+    <p>不管信不信，有时候就是那么回事。</p>
+  </section>
+
+</article>
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('on'); obs.unobserve(e.target); } });
+}, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+
+</body>
+</html>

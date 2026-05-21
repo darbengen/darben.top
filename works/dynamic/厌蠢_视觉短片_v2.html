@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>厌蠢 v2 — 视觉短片</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=JetBrains+Mono:wght@700&family=Noto+Sans+SC:wght@700;900&family=Noto+Serif+SC:wght@900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<style>
+:root{
+  --ink:#070707;--bone:#efe6d3;--bone2:#cfc2aa;--blood:#d83222;--gray:#888880;--warm:#c98a3a;
+  --u:calc(min(100vw,177.78vh)/100);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden}
+body{
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif SC',serif;color:var(--bone);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Grain ── */
+body::after{content:"";position:fixed;inset:0;z-index:300;pointer-events:none;opacity:.15;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")}
+
+/* ── Cursor ── */
+
+/* ── Stage ── */
+.stage{
+  position:relative;width:min(100vw,calc(100vh*16/9));height:min(100vh,calc(100vw*9/16));
+  background:var(--ink);overflow:hidden;
+}
+
+/* ── Progress ── */
+.progress{position:absolute;top:0;left:0;right:0;height:2px;z-index:80;pointer-events:none}
+.progress::before{content:"";position:absolute;top:0;left:0;height:100%;width:var(--p,0%);background:linear-gradient(90deg,var(--blood),var(--blood));box-shadow:0 0 14px rgba(216,50,34,.4);transition:width 80ms linear}
+
+/* ── Chrome ── */
+.chrome{position:absolute;top:0;left:0;right:0;z-index:70;padding:calc(var(--u)*2) calc(var(--u)*3);display:flex;justify-content:space-between;align-items:center;pointer-events:none;opacity:0}
+.chrome.on{opacity:1}
+.chrome .wm{font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--bone2)}
+.chrome .wm em{font-style:italic;font-weight:400;opacity:.55;font-family:'Georgia',serif;letter-spacing:.04em}
+.chrome .counter{font:400 11px/1 'JetBrains Mono',monospace;letter-spacing:.22em;color:var(--bone2);font-feature-settings:"tnum"1}
+.chrome .counter .now{font-weight:600;color:var(--blood)}
+
+/* ── Curtain ── */
+.curtain{position:absolute;inset:0;z-index:280;background:#000;opacity:0;pointer-events:none}
+
+/* ── Flash ── */
+.flash{position:absolute;inset:0;z-index:55;opacity:0;pointer-events:none;background:var(--blood)}
+.flash-w{background:var(--bone)}
+
+/* ── Shot ── */
+.shot{position:absolute;inset:0;z-index:0;display:none;overflow:hidden}
+.shot.on{display:block}
+.shot canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* ── Vignette ── */
+.vignette{position:absolute;inset:0;z-index:230;pointer-events:none;box-shadow:inset 0 0 calc(var(--u)*14) calc(var(--u)*5) rgba(0,0,0,.88)}
+
+/* ── Utilities ── */
+.serif{font-family:'Noto Serif SC',serif;font-weight:900}
+.sans{font-family:'Noto Sans SC',sans-serif;font-weight:900}
+.latin{font-family:'Anton',sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+.bebas{font-family:'Bebas Neue',sans-serif}
+.red{color:var(--blood)}.gray{color:var(--gray)}.bone{color:var(--bone)}.warm{color:var(--warm)}
+.bigGhost{position:absolute;font-family:'Noto Serif SC',serif;font-weight:900;font-size:calc(var(--u)*24);line-height:.8;letter-spacing:-.08em;color:rgba(239,230,211,.04);white-space:nowrap;pointer-events:none;z-index:1}
+.stamp{position:absolute;z-index:220;font-family:'Bebas Neue',sans-serif;font-size:calc(var(--u)*.82);letter-spacing:.32em;color:rgba(239,230,211,.42);pointer-events:none}
+.stamp.tl{top:calc(var(--u)*1.8);left:calc(var(--u)*2)}
+.stamp.tr{top:calc(var(--u)*1.8);right:calc(var(--u)*2)}
+.stamp.br{bottom:calc(var(--u)*1.8);right:calc(var(--u)*2)}
+.stamp.bc{bottom:calc(var(--u)*1.8);left:50%;transform:translateX(-50%);letter-spacing:.52em}
+
+/* ═══════════════════════════════════════════
+   SCENE STYLES — Each scene has a unique layout
+   ═══════════════════════════════════════════ */
+
+/* ── S1: HERO — "厌蠢" giant word + red wall ── */
+.s1{background:linear-gradient(135deg,#080808,#020202 60%,#0a0505)}
+.s1 .wall{position:absolute;right:calc(var(--u)*5);top:-10%;height:120%;width:calc(var(--u)*12);background:linear-gradient(180deg,transparent,var(--blood),transparent);transform:skewX(-14deg);box-shadow:0 0 calc(var(--u)*8) rgba(216,50,34,.35);z-index:3;transform-origin:bottom;opacity:0}
+.s1 .center-stack{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8}
+.s1 .label1{font:400 calc(var(--u)*1.5)/1 'JetBrains Mono',monospace;letter-spacing:.45em;color:rgba(216,50,34,.5);margin-bottom:calc(var(--u)*3);opacity:0}
+.s1 .giant{font:900 calc(var(--u)*22)/.78 'Noto Serif SC',serif;letter-spacing:-.08em;color:var(--blood);opacity:0}
+.s1 .sub1{font:900 calc(var(--u)*3.8)/1 'Noto Sans SC',sans-serif;letter-spacing:.08em;color:rgba(239,230,211,.48);margin-top:calc(var(--u)*2);opacity:0}
+.s1 .ticker{position:absolute;left:0;right:0;bottom:calc(var(--u)*2);border-top:1px solid rgba(216,50,34,.3);display:flex;align-items:center;overflow:hidden;z-index:5;opacity:0}
+.s1 .ticker .tag{font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.32em;color:rgba(216,50,34,.7);padding:calc(var(--u)*1) calc(var(--u)*2)}
+
+/* ── S2: QUESTION MARK — giant outlined "?" ── */
+.s2{background:#050505}
+.s2 .qmark{font:400 calc(var(--u)*30)/.8 'Anton',sans-serif;color:transparent;-webkit-text-stroke:2px rgba(216,50,34,.55);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:7;opacity:0}
+.s2 .caption{position:absolute;left:50%;bottom:calc(var(--u)*14);transform:translateX(-50%);font:900 calc(var(--u)*5)/1 'Noto Serif SC',serif;letter-spacing:-.04em;white-space:nowrap;opacity:0;z-index:8}
+.s2 .micro{position:absolute;left:50%;bottom:calc(var(--u)*10);transform:translateX(-50%);font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(239,230,211,.32);white-space:nowrap;opacity:0;z-index:8}
+
+/* ── S3: SPLIT — left/right comparison ── */
+.s3{background:#050505}
+.s3 .split{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1px 1fr;align-items:center}
+.s3 .divider{height:70%;width:1px;background:linear-gradient(to bottom,transparent,rgba(239,230,211,.28),transparent);margin:auto;opacity:0}
+.s3 .half{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:calc(var(--u)*4);gap:calc(var(--u)*2.5);opacity:0}
+.s3 .half .hl{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.4em;color:rgba(239,230,211,.38)}
+.s3 .half .hw{font:700 calc(var(--u)*8)/1.1 'Noto Serif SC',serif;letter-spacing:-.04em;color:var(--bone)}
+.s3 .half.right .hw{color:var(--blood)}
+
+/* ── S4: ASYMMETRIC — ghost text left, punch right ── */
+.s4{background:#050505}
+.s4 .ghost-txt{position:absolute;left:calc(var(--u)*5);top:38%;transform:translateY(-50%);font:700 calc(var(--u)*4.5)/1.3 'Noto Serif SC',serif;color:transparent;-webkit-text-stroke:1px rgba(250,250,247,.1);text-align:left;z-index:3;opacity:0;max-width:calc(var(--u)*45)}
+.s4 .strike{position:absolute;left:calc(var(--u)*5);top:48%;height:calc(var(--u)*.15);background:var(--blood);z-index:6;width:0}
+.s4 .punch{position:absolute;right:calc(var(--u)*6);top:50%;transform:translateY(-50%);z-index:8;text-align:right;opacity:0;max-width:calc(var(--u)*48)}
+.s4 .punch .line{font:700 calc(var(--u)*5.5)/1.3 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--bone)}
+.s4 .punch .line .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.2em;color:var(--blood)}
+
+/* ── S5: CENTER STACK — 3-layer text tower ── */
+.s5{background:radial-gradient(circle at 50% 50%,rgba(239,230,211,.04),transparent 40%),#050505}
+.s5 .tower{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s5 .tower .t-label{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(239,230,211,.35);margin-bottom:calc(var(--u)*2);opacity:0}
+.s5 .tower .t-main{font:500 calc(var(--u)*5.5)/1.4 'Noto Serif SC',serif;letter-spacing:.04em;color:var(--bone);opacity:0;max-width:80%}
+.s5 .tower .t-main em{font-family:'Georgia',serif;font-style:italic;color:var(--bone2)}
+
+/* ── S6: LEFT PUNCH — text anchored left + slash bar ── */
+.s6{background:#050505}
+.s6 .left-block{position:absolute;left:calc(var(--u)*6);top:50%;transform:translateY(-50%);z-index:8;max-width:calc(var(--u)*70)}
+.s6 .left-block .s-label{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(239,230,211,.35);margin-bottom:calc(var(--u)*1.5);opacity:0}
+.s6 .left-block .s-line{font:700 calc(var(--u)*6)/1.2 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--bone);opacity:0}
+.s6 .left-block .s-line .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.15em;color:var(--blood)}
+.s6 .slash-bar{position:absolute;left:calc(var(--u)*6);right:calc(var(--u)*6);bottom:calc(var(--u)*9);height:calc(var(--u)*.5);background:var(--blood);transform:scaleX(0);transform-origin:left;z-index:9}
+
+/* ── S7: WHISPER — simple transition ── */
+.s7{background:#050505}
+.s7 .whisper{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8}
+.s7 .whisper .w-line{font:400 calc(var(--u)*3.4)/1.4 'Noto Serif SC',serif;letter-spacing:.08em;color:var(--bone2);opacity:0}
+
+/* ── S8/S9: QUOTE CARD — left quote + bar + tag ── */
+.s8,.s9{background:#050505}
+.s8 .qcard,.s9 .qcard{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8}
+.s8 .qcard .q-bar,.s9 .qcard .q-bar{width:calc(var(--u)*.35);height:0;background:var(--blood);margin-bottom:calc(var(--u)*2)}
+.s8 .qcard .q-txt,.s9 .qcard .q-txt{font:400 italic calc(var(--u)*6)/1.25 'Noto Serif SC',serif;color:var(--bone);letter-spacing:.03em;opacity:0;text-align:center}
+.s8 .qcard .q-tag,.s9 .qcard .q-tag{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(216,50,34,.5);margin-top:calc(var(--u)*2);opacity:0}
+
+/* ── S10: CLIMAX STACK — 5-line argument ── */
+.s10{background:radial-gradient(circle at 50% 48%,rgba(216,50,34,.12),transparent 38%),#050505}
+.s10 .climax{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s10 .climax .c-label{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.48em;color:rgba(216,50,34,.5);margin-bottom:calc(var(--u)*3);opacity:0}
+.s10 .climax .c-big{font:900 calc(var(--u)*6)/1.25 'Noto Serif SC',serif;letter-spacing:-.04em;color:var(--bone);opacity:0;max-width:90%}
+.s10 .climax .c-big .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.22em;color:var(--blood)}
+.s10 .climax .c-meta{font:400 calc(var(--u)*1.2)/1 'Bebas Neue',sans-serif;letter-spacing:.45em;color:rgba(239,230,211,.28);margin-top:calc(var(--u)*3);opacity:0}
+
+/* ── S11: SLASH — aggressive diagonal word ── */
+.s11{background:#050505}
+.s11 .confront{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center}
+.s11 .confront .c-line{font:800 calc(var(--u)*6)/1.25 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--bone);opacity:0;max-width:75%}
+.s11 .confront .c-line .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.18em;color:var(--blood)}
+.s11 .slash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);height:calc(var(--u)*.8);width:0;background:var(--blood);z-index:6;opacity:0}
+
+/* ── S12: QUOTE CENTER — big quote + tag ── */
+.s12{background:#050505}
+.s12 .quotec{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s12 .quotec .q-txt{font:400 italic calc(var(--u)*5.5)/1.35 'Noto Serif SC',serif;color:var(--bone2);letter-spacing:.04em;opacity:0;max-width:80%}
+.s12 .quotec .q-txt .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-style:normal;font-size:1.14em;color:var(--blood)}
+.s12 .quotec .q-by{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.4em;color:rgba(239,230,211,.3);margin-top:calc(var(--u)*2);opacity:0}
+
+/* ── S13: LIGHT CENTER — transitional statement ── */
+.s13{background:#050505}
+.s13 .lightc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center}
+.s13 .lightc .l-line{font:400 calc(var(--u)*4.6)/1.45 'Noto Serif SC',serif;letter-spacing:.05em;color:var(--bone2);opacity:0;max-width:72%}
+
+/* ── S14: TURNING POINT — left label + right golden punch ── */
+.s14{background:radial-gradient(circle at 50% 50%,rgba(184,138,58,.08),transparent 40%),#050505}
+.s14 .tp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s14 .tp .tp-label{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(184,138,58,.55);margin-bottom:calc(var(--u)*2.5);opacity:0}
+.s14 .tp .tp-main{font:700 calc(var(--u)*6.5)/1.2 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--warm);opacity:0;max-width:78%}
+
+/* ── S15: CENTER + TRI-BAR — punch with bottom accent ── */
+.s15{background:#050505}
+.s15 .tri-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s15 .tri-wrap .tri-label{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(239,230,211,.35);margin-bottom:calc(var(--u)*2);opacity:0}
+.s15 .tri-wrap .tri-main{font:700 calc(var(--u)*5.5)/1.3 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--bone);opacity:0;max-width:75%}
+.s15 .tri-wrap .tri-main .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.14em;color:var(--blood)}
+.s15 .tri-bar{position:absolute;bottom:calc(var(--u)*8);left:calc(var(--u)*8);right:calc(var(--u)*8);height:calc(var(--u)*.6);display:grid;grid-template-columns:1fr 1fr 1fr;gap:calc(var(--u)*.5);z-index:9}
+.s15 .tri-bar div{height:100%;transform:scaleX(0);transform-origin:left}
+.s15 .tri-bar .t1{background:rgba(239,230,211,.5)}
+.s15 .tri-bar .t2{background:var(--gray)}
+.s15 .tri-bar .t3{background:var(--bone)}
+
+/* ── S16: PORTAL — centered text + rotating ring ── */
+.s16{background:#050505}
+.s16 .portal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(var(--u)*34);height:calc(var(--u)*34);border-radius:50%;border:2px solid rgba(184,138,58,.4);z-index:5;opacity:0}
+.s16 .portal::before{content:"";position:absolute;inset:calc(var(--u)*3);border-radius:50%;border:1px solid rgba(239,230,211,.15)}
+.s16 .mirror-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s16 .mirror-wrap .m-label{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(184,138,58,.55);margin-bottom:calc(var(--u)*2.5);opacity:0}
+.s16 .mirror-wrap .m-main{font:500 calc(var(--u)*4.5)/1.45 'Noto Serif SC',serif;letter-spacing:.03em;color:var(--warm);opacity:0;max-width:72%}
+
+/* ── S17: GROWTH — center stack warm ── */
+.s17{background:radial-gradient(circle at 50% 50%,rgba(184,138,58,.06),transparent 40%),#050505}
+.s17 .grow{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s17 .grow .g-label{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.4em;color:rgba(184,138,58,.45);margin-bottom:calc(var(--u)*2.5);opacity:0}
+.s17 .grow .g-main{font:500 calc(var(--u)*5)/1.45 'Noto Serif SC',serif;letter-spacing:.03em;color:var(--bone);opacity:0;max-width:75%}
+
+/* ── S18: STRIKE THROUGH — center + red strike ── */
+.s18{background:#050505}
+.s18 .strike-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s18 .strike-wrap .st-label{font:400 calc(var(--u)*1.3)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(239,230,211,.35);margin-bottom:calc(var(--u)*2);opacity:0}
+.s18 .strike-wrap .st-main{font:600 calc(var(--u)*5)/1.35 'Noto Serif SC',serif;letter-spacing:.03em;color:var(--bone);opacity:0;max-width:78%}
+.s18 .st-line{position:absolute;left:calc(var(--u)*10);right:calc(var(--u)*10);top:50%;height:calc(var(--u)*.5);background:var(--blood);transform:scaleX(0);transform-origin:left;z-index:9}
+
+/* ── S19: OUTLINE GIANT — stroke-only "魔镜" ── */
+.s19{background:radial-gradient(circle at 50% 50%,rgba(216,50,34,.15),transparent 34%),#050505}
+.s19 .ring-wrap{position:absolute;inset:0;z-index:3;pointer-events:none}
+.s19 .ring-wrap .r1,.s19 .ring-wrap .r2,.s19 .ring-wrap .r3{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;opacity:0}
+.s19 .ring-wrap .r1{width:calc(var(--u)*60);height:calc(var(--u)*60);border:1px solid rgba(216,50,34,.18)}
+.s19 .ring-wrap .r2{width:calc(var(--u)*42);height:calc(var(--u)*42);border:1px solid rgba(239,230,211,.08)}
+.s19 .ring-wrap .r3{width:calc(var(--u)*26);height:calc(var(--u)*26);border:1px solid rgba(216,50,34,.25)}
+.s19 .mirror-word{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8}
+.s19 .mirror-word .mw{font:900 calc(var(--u)*20)/.8 'Noto Sans SC',sans-serif;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:2px rgba(216,50,34,.85);opacity:0}
+
+/* ── S20: OUTLINE FOCUS — "信息茧房" stroked ── */
+.s20{background:#050505}
+.s20 .focusc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s20 .focusc .f-word{font:900 calc(var(--u)*7)/.9 'Noto Sans SC',sans-serif;letter-spacing:-.04em;color:transparent;-webkit-text-stroke:1px rgba(216,50,34,.6);margin-bottom:calc(var(--u)*2);opacity:0}
+.s20 .focusc .f-sub{font:600 calc(var(--u)*4.5)/1.35 'Noto Serif SC',serif;letter-spacing:.02em;color:var(--bone);opacity:0;max-width:72%}
+
+/* ── S21: RED BURST — 喜欢/厌蠢 both red ── */
+.s21{background:radial-gradient(circle at 50% 50%,rgba(216,50,34,.07),transparent 38%),#050505}
+.s21 .burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s21 .burst .b-label{font:400 calc(var(--u)*1.4)/1 'Bebas Neue',sans-serif;letter-spacing:.42em;color:rgba(216,50,34,.5);margin-bottom:calc(var(--u)*2.5);opacity:0}
+.s21 .burst .b-main{font:700 calc(var(--u)*7)/1.2 'Noto Serif SC',serif;letter-spacing:.01em;color:var(--bone);opacity:0;max-width:80%}
+.s21 .burst .b-main .r{font-family:'Noto Sans SC',sans-serif;font-weight:900;font-size:1.2em;color:var(--blood)}
+
+/* ── S22: CASUAL CENTER — lighter tone ── */
+.s22{background:#050505}
+.s22 .casual{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center}
+.s22 .casual .c-line{font:400 calc(var(--u)*4.2)/1.5 'Noto Serif SC',serif;letter-spacing:.04em;color:var(--bone2);opacity:0;max-width:75%}
+
+/* ── S23: WARM CLOSE — golden center ── */
+.s23{background:radial-gradient(circle at 50% 50%,rgba(184,138,58,.06),transparent 40%),#050505}
+.s23 .wclose{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:8;text-align:center}
+.s23 .wclose .wc-line{font:500 calc(var(--u)*5)/1.4 'Noto Serif SC',serif;letter-spacing:.03em;color:var(--warm);opacity:0;max-width:75%}
+
+/* ── S24: FINALE — 3 lines + gold close ── */
+.s24{background:radial-gradient(circle at 50% 50%,rgba(184,138,58,.09),transparent 44%),#050505}
+.s24 .finale{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:8;text-align:center}
+.s24 .finale .f-line{font:400 calc(var(--u)*4.2)/1.5 'Noto Serif SC',serif;letter-spacing:.04em;color:var(--bone);opacity:0;max-width:80%}
+.s24 .finale .f-gold{font:700 calc(var(--u)*4.5)/1.5 'Noto Sans SC',sans-serif;letter-spacing:.04em;color:var(--warm);margin-top:calc(var(--u)*1.5);opacity:0}
+
+/* ── Controls ── */
+.ctrls{position:absolute;bottom:calc(var(--u)*1.5);left:50%;transform:translateX(-50%);z-index:90;display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.85);padding:10px 14px;border:1px solid #333;border-radius:4px;font-family:'Noto Sans SC',sans-serif;font-size:11px;color:var(--bone);letter-spacing:.15em;opacity:0;transition:opacity .4s}
+.ctrls.on{opacity:1}
+.ctrls button{background:#1a1a1a;color:var(--bone);border:1px solid #444;padding:6px 12px;font:inherit;cursor:pointer}
+.ctrls button:hover{background:var(--blood);border-color:var(--blood)}
+.ctrls .scrub{width:280px;height:4px;background:#333;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none}
+.ctrls .scrub::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--blood);border-radius:50%;cursor:pointer}
+.ctrls .tc{min-width:80px;text-align:center;font-feature-settings:"tnum"1}
+
+/* ── Start ── */
+.start-overlay{position:absolute;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);cursor:pointer}
+.start-overlay .btn{font:400 14px/1 'JetBrains Mono',monospace;letter-spacing:.32em;color:var(--bone);border:1px solid rgba(250,250,247,.22);padding:calc(var(--u)*2.5) calc(var(--u)*5);transition:all 480ms cubic-bezier(.18,.62,.18,1)}
+.start-overlay:hover .btn{border-color:var(--blood);color:var(--blood)}
+</style>
+</head>
+<body>
+
+
+<div class="stage" id="stage">
+
+  <div class="progress" id="progress"></div>
+
+  <div class="chrome" id="chrome">
+    <div class="wm">厌蠢 <em>yàn chǔn</em></div>
+    <div class="counter"><span class="now" id="tc-now">00:00</span><span>/</span><span id="tc-total">01:43</span></div>
+  </div>
+
+  <div class="curtain" id="curtain"></div>
+  <div class="flash" id="flash"></div>
+  <div class="flash flash-w" id="flash-w"></div>
+
+  <!-- ═══════════════ 24 SCENES ═══════════════ -->
+
+  <!-- S1: HERO -->
+  <div class="shot s1" id="s1">
+    <canvas id="c1"></canvas>
+    <div class="vignette"></div>
+    <div class="bigGhost" style="right:-3vw;top:-5vh;font-size:calc(var(--u)*28);color:rgba(216,50,34,.045)">厌蠢</div>
+    <div class="stamp tl">VISUAL SHORT · 2026</div>
+    <div class="wall" id="s1-wall"></div>
+    <div class="center-stack">
+      <div class="label1" id="s1-label">YÀN CHǓN</div>
+      <div class="giant" id="s1-giant">厌蠢</div>
+      <div class="sub1" id="s1-sub">是褒义词</div>
+    </div>
+    <div class="ticker" id="s1-ticker"><div class="tag">BREAKING · 事实证明</div></div>
+  </div>
+
+  <!-- S2: QUESTION MARK -->
+  <div class="shot s2" id="s2">
+    <canvas id="c2"></canvas>
+    <div class="vignette"></div>
+    <div class="stamp tr">OBSERVATION</div>
+    <div class="qmark" id="s2-qmark">?</div>
+    <div class="caption" id="s2-caption">不厌蠢的人，往往随波逐流</div>
+    <div class="micro" id="s2-micro">FOLLOW · THE · CROWD</div>
+  </div>
+
+  <!-- S3: SPLIT -->
+  <div class="shot s3" id="s3">
+    <canvas id="c3"></canvas>
+    <div class="vignette"></div>
+    <div class="split">
+      <div class="half left" id="s3-left">
+        <div class="hl">CAN'T TOLERATE</div>
+        <div class="hw">他人的<span class="red">低智</span></div>
+      </div>
+      <div class="divider" id="s3-divider"></div>
+      <div class="half right" id="s3-right">
+        <div class="hl">REASON</div>
+        <div class="hw">因为你</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: ASYMMETRIC -->
+  <div class="shot s4" id="s4">
+    <canvas id="c4"></canvas>
+    <div class="vignette"></div>
+    <div class="ghost-txt" id="s4-ghost">因为你不容易忍受他人的低智</div>
+    <div class="strike" id="s4-strike"></div>
+    <div class="punch" id="s4-punch"><div class="line">同样的，你也不会忍受自己的<span class="r">愚蠢</span></div></div>
+  </div>
+
+  <!-- S5: CENTER STACK -->
+  <div class="shot s5" id="s5">
+    <canvas id="c5"></canvas>
+    <div class="vignette"></div>
+    <div class="stamp tr">MODERNITY</div>
+    <div class="tower">
+      <div class="t-label" id="s5-label">THE REAL PROBLEM</div>
+      <div class="t-main" id="s5-main">现代人最大的问题<em>就是</em>与问题和谐相处</div>
+    </div>
+  </div>
+
+  <!-- S6: LEFT PUNCH -->
+  <div class="shot s6" id="s6">
+    <canvas id="c6"></canvas>
+    <div class="vignette"></div>
+    <div class="left-block">
+      <div class="s-label" id="s6-label">BLIND SPOT</div>
+      <div class="s-line" id="s6-line">自己哪哪都是问题，却总是<span class="r">看不出、发不现</span></div>
+    </div>
+    <div class="slash-bar" id="s6slash"></div>
+  </div>
+
+  <!-- S7: WHISPER -->
+  <div class="shot s7" id="s7">
+    <canvas id="c7"></canvas>
+    <div class="vignette"></div>
+    <div class="whisper"><div class="w-line" id="s7-line">嘴里还总是说：</div></div>
+  </div>
+
+  <!-- S8: QUOTE 1 -->
+  <div class="shot s8" id="s8">
+    <canvas id="c8"></canvas>
+    <div class="vignette"></div>
+    <div class="qcard">
+      <div class="q-bar" id="s8-bar"></div>
+      <div class="q-txt" id="s8-txt">「像我这样的人就是...」</div>
+      <div class="q-tag" id="s8-tag">EXCUSE #1</div>
+    </div>
+  </div>
+
+  <!-- S9: QUOTE 2 -->
+  <div class="shot s9" id="s9">
+    <canvas id="c9"></canvas>
+    <div class="vignette"></div>
+    <div class="qcard">
+      <div class="q-bar" id="s9-bar"></div>
+      <div class="q-txt" id="s9-txt">「我就知道会这样的结果」</div>
+      <div class="q-tag" id="s9-tag">EXCUSE #2</div>
+    </div>
+  </div>
+
+  <!-- S10: CLIMAX STACK -->
+  <div class="shot s10" id="s10">
+    <canvas id="c10"></canvas>
+    <div class="vignette"></div>
+    <div class="bigGhost" style="left:50%;top:45%;transform:translate(-50%,-50%);font-size:calc(var(--u)*26);color:rgba(216,50,34,.045)">放任</div>
+    <div class="stamp tr">CLIMAX</div>
+    <div class="climax">
+      <div class="c-label" id="s10-label">CORE ARGUMENT</div>
+      <div class="c-big" id="s10-big">这是一个<br><span class="r">放任自己问题</span><br>比<br><span class="r">努力改变现状</span><br>更受欢迎的时代</div>
+      <div class="c-meta" id="s10-meta">THE AGE OF SELF-NEGLECT</div>
+    </div>
+  </div>
+
+  <!-- S11: SLASH -->
+  <div class="shot s11" id="s11">
+    <canvas id="c11"></canvas>
+    <div class="vignette"></div>
+    <div class="confront">
+      <div class="c-line" id="s11-line">但相反，要是别人说出来了，还要<span class="r">咬对方一口</span></div>
+    </div>
+    <div class="slash" id="s11-slash"></div>
+  </div>
+
+  <!-- S12: QUOTE CENTER -->
+  <div class="shot s12" id="s12">
+    <canvas id="c12"></canvas>
+    <div class="vignette"></div>
+    <div class="quotec">
+      <div class="q-txt" id="s12-txt">「<span class="r">真该死啊</span>，你怎么就说出<span class="r">大实话</span>了呢？」</div>
+      <div class="q-by" id="s12-by">REACTION</div>
+    </div>
+  </div>
+
+  <!-- S13: LIGHT CENTER -->
+  <div class="shot s13" id="s13">
+    <canvas id="c13"></canvas>
+    <div class="vignette"></div>
+    <div class="lightc"><div class="l-line" id="s13-line">他们可以很轻松的接受自己身上的一切问题</div></div>
+  </div>
+
+  <!-- S14: TURNING POINT -->
+  <div class="shot s14" id="s14">
+    <canvas id="c14"></canvas>
+    <div class="vignette"></div>
+    <div class="stamp br">TURNING POINT</div>
+    <div class="tp">
+      <div class="tp-label" id="s14-label">HOWEVER</div>
+      <div class="tp-main" id="s14-main">但这种「不厌蠢」可不是简单的豁达</div>
+    </div>
+  </div>
+
+  <!-- S15: CENTER + TRI-BAR -->
+  <div class="shot s15" id="s15">
+    <canvas id="c15"></canvas>
+    <div class="vignette"></div>
+    <div class="tri-wrap">
+      <div class="tri-label" id="s15-label">THE TRUTH</div>
+      <div class="tri-main" id="s15-main">仅仅是他们根本<span class="r">就没发现</span>，甚至<span class="r">拒绝发现</span></div>
+    </div>
+    <div class="tri-bar" id="s15-tribar"><div class="t1"></div><div class="t2"></div><div class="t3"></div></div>
+  </div>
+
+  <!-- S16: PORTAL -->
+  <div class="shot s16" id="s16">
+    <canvas id="c16"></canvas>
+    <div class="vignette"></div>
+    <div class="portal" id="s16-portal"></div>
+    <div class="mirror-wrap">
+      <div class="m-label" id="s16-label">MIRROR</div>
+      <div class="m-main" id="s16-main">他人是一面镜子。<br>社交的另一个作用，就是发现自己的愚蠢、呆板。</div>
+    </div>
+  </div>
+
+  <!-- S17: GROWTH -->
+  <div class="shot s17" id="s17">
+    <canvas id="c17"></canvas>
+    <div class="vignette"></div>
+    <div class="grow">
+      <div class="g-label" id="s17-label">GROWTH</div>
+      <div class="g-main" id="s17-main">学习如何与人相处、<br>学习如何改掉身上那层清澈的愚蠢</div>
+    </div>
+  </div>
+
+  <!-- S18: STRIKE THROUGH -->
+  <div class="shot s18" id="s18">
+    <canvas id="c18"></canvas>
+    <div class="vignette"></div>
+    <div class="strike-wrap">
+      <div class="st-label" id="s18-label">UNFORTUNATELY</div>
+      <div class="st-main" id="s18-main">只可惜，当身边充斥着太会忍受问题人类时</div>
+    </div>
+    <div class="st-line" id="s18-stline"></div>
+  </div>
+
+  <!-- S19: OUTLINE GIANT -->
+  <div class="shot s19" id="s19">
+    <canvas id="c19"></canvas>
+    <div class="vignette"></div>
+    <div class="bigGhost" style="left:50%;top:45%;transform:translate(-50%,-50%);font-size:calc(var(--u)*30);color:rgba(216,50,34,.05)">魔镜</div>
+    <div class="stamp tl">MIRROR</div>
+    <div class="ring-wrap">
+      <div class="r1" id="s19-r1"></div>
+      <div class="r2" id="s19-r2"></div>
+      <div class="r3" id="s19-r3"></div>
+    </div>
+    <div class="mirror-word"><div class="mw" id="s19-mw">魔镜</div></div>
+  </div>
+
+  <!-- S20: OUTLINE FOCUS -->
+  <div class="shot s20" id="s20">
+    <canvas id="c20"></canvas>
+    <div class="vignette"></div>
+    <div class="focusc">
+      <div class="f-word" id="s20-fw">信息茧房</div>
+      <div class="f-sub" id="s20-fs">你只能看到你想看到的</div>
+    </div>
+  </div>
+
+  <!-- S21: RED BURST -->
+  <div class="shot s21" id="s21">
+    <canvas id="c21"></canvas>
+    <div class="vignette"></div>
+    <div class="stamp tl">I LIKE</div>
+    <div class="burst">
+      <div class="b-label" id="s21-label">CONFESSION</div>
+      <div class="b-main" id="s21-main">我<span class="r">喜欢</span>厌蠢的人，也同样是一个<span class="r">厌蠢</span>的人</div>
+    </div>
+  </div>
+
+  <!-- S22: CASUAL CENTER -->
+  <div class="shot s22" id="s22">
+    <canvas id="c22"></canvas>
+    <div class="vignette"></div>
+    <div class="casual"><div class="c-line" id="s22-line">当然我不会当着「正常人」的面说出来<br>因为他们会急眼，显得我很蠢</div></div>
+  </div>
+
+  <!-- S23: WARM CLOSE -->
+  <div class="shot s23" id="s23">
+    <canvas id="c23"></canvas>
+    <div class="vignette"></div>
+    <div class="wclose"><div class="wc-line" id="s23-line">但是和同样厌蠢的人在一起时<br>我就可以轻松委婉的指出</div></div>
+  </div>
+
+  <!-- S24: FINALE -->
+  <div class="shot s24" id="s24">
+    <canvas id="c24"></canvas>
+    <div class="vignette"></div>
+    <div class="bigGhost" style="left:50%;top:42%;transform:translate(-50%,-50%);font-size:calc(var(--u)*28);color:rgba(184,138,58,.05)">↑</div>
+    <div class="stamp br">FIN</div>
+    <div class="finale">
+      <div class="f-line" id="s24-line">双方互相指出对方潜在的缺点<br>就是在帮助对方更快的社会化</div>
+      <div class="f-gold" id="s24-gold">增大成长斜率</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CONTROLS ═══════════════ -->
+  <div class="ctrls" id="ctrls">
+    <button id="btn-play">▶</button>
+    <input type="range" class="scrub" id="scrub" min="0" max="103" value="0" step="0.1">
+    <span class="tc" id="tc">00:00 / 01:43</span>
+  </div>
+
+  <div class="start-overlay" id="start-overlay">
+    <div class="btn" id="startBtn">按空格键 或 点击开始</div>
+  </div>
+
+</div><!-- /stage -->
+
+<audio id="bgm" preload="auto" src="bgm.mp3"></audio>
+<audio id="vocal" preload="auto" src="vocal.mp3"></audio>
+
+<script>
+document.title = 'V2-STARTED';
+try {
+if(typeof gsap==='undefined'){
+  window.gsap={to:function(t,v){if(v&&v.onComplete)v.onComplete();return{}},fromTo:function(t,f,v){if(v&&v.onComplete)v.onComplete();return{}},set:function(){},delayedCall:function(d,fn){setTimeout(fn,d*1000);return{}}};
+}
+const G=gsap;
+document.title='V2-OK';
+const S=document.getElementById('stage');
+const curtain=document.getElementById('curtain');
+const flashEl=document.getElementById('flash');
+const flashW=document.getElementById('flash-w');
+const bgm=document.getElementById('bgm');
+const vocal=document.getElementById('vocal');
+const progress=document.getElementById('progress');
+const chrome=document.getElementById('chrome');
+const ctrls=document.getElementById('ctrls');
+const scrub=document.getElementById('scrub');
+const tcEl=document.getElementById('tc');
+const tcNow=document.getElementById('tc-now');
+const btnPlay=document.getElementById('btn-play');
+const overlay=document.getElementById('start-overlay');
+const TOTAL=103.3;
+
+// ── Cursor ──
+function fmt(s){const m=Math.floor(s/60),sec=Math.floor(s%60);return `${m}:${String(sec).padStart(2,'0')}`}
+
+// ── Token ──
+let globalToken={alive:true};
+function newToken(){globalToken.alive=false;globalToken={alive:true};return globalToken}
+
+// ── Canvas ──
+function runCanvas(cid,type){
+  const c=document.getElementById(cid);if(!c)return;
+  c.width=c.offsetWidth;c.height=c.offsetHeight;
+  const ctx=c.getContext('2d'),W=c.width,H=c.height,u=W/100;
+  const tk=newToken();
+  if(type==='red-particles'){
+    const pts=Array.from({length:40},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.5,vy:(Math.random()-.5)*.5,r:Math.random()*2+.5}));
+    (function loop(){if(!tk.alive)return;ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(214,40,40,${.12+Math.random()*.18})`;ctx.fill()});requestAnimationFrame(loop)})();
+  }else if(type==='bone-particles'){
+    const pts=Array.from({length:55},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.5+.3}));
+    (function loop(){if(!tk.alive)return;ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(201,192,168,${.05+Math.random()*.07})`;ctx.fill()});requestAnimationFrame(loop)})();
+  }else if(type==='grid'){
+    (function loop(){if(!tk.alive)return;ctx.clearRect(0,0,W,H);ctx.strokeStyle='rgba(138,132,115,.06)';ctx.lineWidth=.5;for(let x=0;x<W;x+=u*5){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=u*5){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}for(let i=0;i<5;i++){ctx.fillStyle=`rgba(214,40,40,${.03+Math.random()*.05})`;ctx.fillRect(Math.random()*W,Math.random()*H,Math.random()*u*20,Math.random()*u)}requestAnimationFrame(loop)})();
+  }else if(type==='warm'){
+    const pts=Array.from({length:40},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*2.5+.8}));
+    (function loop(){if(!tk.alive)return;ctx.clearRect(0,0,W,H);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*7);g.addColorStop(0,`rgba(184,138,58,${.15+Math.random()*.15})`);g.addColorStop(1,'rgba(184,138,58,0)');ctx.beginPath();ctx.arc(p.x,p.y,p.r*7,0,Math.PI*2);ctx.fillStyle=g;ctx.fill()});requestAnimationFrame(loop)})();
+  }else if(type==='mirror'){
+    (function loop(){if(!tk.alive)return;ctx.clearRect(0,0,W,H);for(let i=1;i<=3;i++){ctx.beginPath();ctx.arc(W/2,H/2,u*15*i,0,Math.PI*2);ctx.strokeStyle=`rgba(184,138,58,${.08/i})`;ctx.lineWidth=.5;ctx.stroke()}const t=performance.now()/1000;for(let i=0;i<20;i++){const a=(i/20)*Math.PI*2+t*.15;const r=u*(22+Math.sin(t*.3+i)*8);ctx.beginPath();ctx.arc(W/2+Math.cos(a)*r,H/2+Math.sin(a)*r*.6,1.5,0,Math.PI*2);ctx.fillStyle=`rgba(184,138,58,${.2+Math.sin(t+i)*.15})`;ctx.fill()}requestAnimationFrame(loop)})();
+  }
+}
+function killCanvases(){}
+
+// ── Flash ──
+function doFlash(color,dur){color=color||'red';dur=dur||.18;const el=color==='white'?flashW:flashEl;G.to(el,{opacity:.7,duration:.04,ease:'power2.in',onComplete:()=>G.to(el,{opacity:0,duration:dur,ease:'power2.out'})})}
+
+// ── Transition ──
+let transitioning=false;
+function show(shotId,onReady){
+  if(transitioning)return;transitioning=true;killCanvases();
+  G.to(curtain,{opacity:1,duration:.22,ease:'power2.in',onComplete:()=>{
+    document.querySelectorAll('.shot.on').forEach(el=>el.classList.remove('on'));
+    const el=document.getElementById(shotId);if(el)el.classList.add('on');
+    if(onReady)onReady();
+    G.to(curtain,{opacity:0,duration:.38,ease:'power2.out',delay:.04,onComplete:()=>{transitioning=false}});
+  }});
+}
+
+// ═══════════════════════════════════════════
+// SCENE FUNCTIONS — S+Sb two-wave system
+// ═══════════════════════════════════════════
+
+function S1(){show('s1',()=>{
+  runCanvas('c1','red-particles');
+  G.fromTo('#s1-wall',{opacity:0,scaleY:0},{opacity:1,scaleY:1,duration:.38,ease:'power3.out'});
+  G.fromTo('#s1-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.35,ease:'power3.out'});
+});}
+function S1b(){
+  G.fromTo('#s1-giant',{opacity:0,x:-100,scale:1.15},{opacity:1,x:0,scale:1,duration:.5,ease:'back.out(2)'});
+  G.fromTo('#s1-sub',{opacity:0,letterSpacing:'1em'},{opacity:1,letterSpacing:'.08em',duration:.6,delay:.45});
+  G.fromTo('#s1-ticker',{opacity:0},{opacity:1,duration:.4,delay:.7});
+  doFlash('red',.15);
+}
+
+function S2(){show('s2',()=>{
+  runCanvas('c2','bone-particles');
+  G.fromTo('#s2-qmark',{opacity:0,scale:.5},{opacity:1,scale:1,duration:.5,ease:'back.out(2)'});
+});}
+function S2b(){
+  G.fromTo('#s2-caption',{opacity:0,x:80},{opacity:1,x:0,duration:.48,ease:'back.out(2)'});
+  G.fromTo('#s2-micro',{opacity:0},{opacity:1,duration:.4,delay:.3});
+}
+
+function S3(){show('s3',()=>{
+  runCanvas('c3','grid');
+  G.fromTo('#s3-left',{opacity:0,x:-60},{opacity:1,x:0,duration:.38,ease:'power3.out'});
+  G.fromTo('#s3-divider',{opacity:0,scaleY:0},{opacity:1,scaleY:1,duration:.35,delay:.1,ease:'power3.out'});
+});}
+function S3b(){
+  G.fromTo('#s3-right',{opacity:0,x:60},{opacity:1,x:0,duration:.38,ease:'power3.out'});
+}
+
+function S4(){show('s4',()=>{
+  runCanvas('c4','grid');
+  G.fromTo('#s4-ghost',{opacity:0},{opacity:1,duration:.5});
+  G.to(document.getElementById('s4-strike'),{width:'calc(var(--u)*52)',duration:.35,delay:.15,ease:'power2.in'});
+});}
+function S4b(){
+  G.fromTo('#s4-punch',{opacity:0,x:60},{opacity:1,x:0,duration:.42,ease:'power3.out'});
+  G.to(document.getElementById('s4-strike'),{opacity:0,duration:.3,delay:1.2});
+}
+
+function S5(){show('s5',()=>{
+  runCanvas('c5','bone-particles');
+  G.fromTo('#s5-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.32,ease:'power3.out'});
+});}
+function S5b(){
+  G.fromTo('#s5-main',{opacity:0,y:40,scale:.95},{opacity:1,y:0,scale:1,duration:.5,ease:'back.out(2)'});
+}
+
+function S6(){show('s6',()=>{
+  runCanvas('c6','grid');
+  G.fromTo('#s6-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.3,ease:'power3.out'});
+});}
+function S6b(){
+  G.fromTo('#s6-line',{opacity:0,scale:.85,y:50},{opacity:1,scale:1,y:0,duration:.5,ease:'back.out(2)'});
+  G.to('#s6slash',{scaleX:1,duration:.45,delay:.3,ease:'power4.out'});
+  doFlash('red',.12);
+}
+
+function S7(){show('s7',()=>{
+  runCanvas('c7','bone-particles');
+  G.fromTo('#s7-line',{opacity:0,y:20},{opacity:1,y:0,duration:.42,ease:'power2.out'});
+});}
+function S7b(){}
+
+function S8(){show('s8',()=>{
+  runCanvas('c8','grid');
+  G.to(document.getElementById('s8-bar'),{height:'calc(var(--u)*20)',duration:.35,ease:'power2.in'});
+  G.fromTo('#s8-txt',{opacity:0,x:-40},{opacity:1,x:0,duration:.45,delay:.15,ease:'power3.out'});
+});}
+function S8b(){
+  G.fromTo('#s8-tag',{opacity:0,y:20},{opacity:1,y:0,duration:.4,delay:.1});
+}
+
+function S9(){show('s9',()=>{
+  runCanvas('c9','grid');
+  G.to(document.getElementById('s9-bar'),{height:'calc(var(--u)*20)',duration:.35,ease:'power2.in'});
+  G.fromTo('#s9-txt',{opacity:0,x:-40},{opacity:1,x:0,duration:.45,delay:.15,ease:'power3.out'});
+});}
+function S9b(){
+  G.fromTo('#s9-tag',{opacity:0,y:20},{opacity:1,y:0,duration:.4,delay:.1});
+  doFlash('red',.1);
+}
+
+function S10(){show('s10',()=>{
+  runCanvas('c10','red-particles');
+  G.fromTo('#s10-label',{opacity:0,y:-20},{opacity:1,y:0,duration:.35});
+});}
+function S10b(){
+  G.fromTo('#s10-big',{opacity:0,scale:.82,y:60},{opacity:1,scale:1,y:0,duration:.65,ease:'back.out(2)'});
+  G.fromTo('#s10-meta',{opacity:0},{opacity:1,duration:.5,delay:.6});
+  doFlash('red',.22);
+  G.delayedCall(.35,()=>doFlash('white',.1));
+}
+
+function S11(){show('s11',()=>{
+  runCanvas('c11','red-particles');
+  const sl=document.getElementById('s11-slash');
+  G.fromTo('#s11-line',{opacity:0,x:-60},{opacity:1,x:0,duration:.42,ease:'power3.out'});
+  G.to(sl,{opacity:.65,width:'calc(var(--u)*50)',duration:.4,delay:.2,ease:'power2.out'});
+});}
+function S11b(){
+  doFlash('red',.1);
+  G.to(document.getElementById('s11-slash'),{opacity:0,duration:.6,delay:.8});
+}
+
+function S12(){show('s12',()=>{
+  runCanvas('c12','grid');
+  G.fromTo('#s12-txt',{opacity:0,y:40},{opacity:1,y:0,duration:.5,ease:'back.out(2)'});
+});}
+function S12b(){
+  G.fromTo('#s12-by',{opacity:0},{opacity:1,duration:.4,delay:.15});
+}
+
+function S13(){show('s13',()=>{
+  runCanvas('c13','bone-particles');
+  G.fromTo('#s13-line',{opacity:0,y:30},{opacity:1,y:0,duration:.5,ease:'power3.out'});
+});}
+function S13b(){}
+
+function S14(){show('s14',()=>{
+  runCanvas('c14','warm');
+  G.fromTo('#s14-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.32,ease:'power3.out'});
+});}
+function S14b(){
+  G.fromTo('#s14-main',{opacity:0,x:60,scale:1.05},{opacity:1,x:0,scale:1,duration:.55,ease:'back.out(2)'});
+}
+
+function S15(){show('s15',()=>{
+  runCanvas('c15','grid');
+  G.fromTo('#s15-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.3,ease:'power3.out'});
+});}
+function S15b(){
+  G.fromTo('#s15-main',{opacity:0,scale:.9,y:50},{opacity:1,scale:1,y:0,duration:.5,ease:'back.out(2)'});
+  G.fromTo('#s15-tribar div',{scaleX:0},{scaleX:1,duration:.45,stagger:.18,delay:.4,ease:'power4.out'});
+  doFlash('red',.08);
+}
+
+function S16(){show('s16',()=>{
+  runCanvas('c16','mirror');
+  G.fromTo('#s16-portal',{opacity:0,scale:.4},{opacity:1,scale:1,duration:.6,ease:'back.out(2)'});
+  G.to('#s16-portal',{rotation:360,duration:8,repeat:-1,ease:'none'});
+  G.fromTo('#s16-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.35,delay:.2,ease:'power3.out'});
+});}
+function S16b(){
+  G.fromTo('#s16-main',{opacity:0,y:30},{opacity:1,y:0,duration:.55,delay:.1,ease:'power3.out'});
+}
+
+function S17(){show('s17',()=>{
+  runCanvas('c17','warm');
+  G.fromTo('#s17-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.32,ease:'power3.out'});
+});}
+function S17b(){
+  G.fromTo('#s17-main',{opacity:0,x:60},{opacity:1,x:0,duration:.55,ease:'back.out(2)'});
+}
+
+function S18(){show('s18',()=>{
+  runCanvas('c18','grid');
+  G.fromTo('#s18-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.3,ease:'power3.out'});
+});}
+function S18b(){
+  G.fromTo('#s18-main',{opacity:0,y:40},{opacity:1,y:0,duration:.5,ease:'back.out(2)'});
+  G.to('#s18-stline',{scaleX:1,duration:.45,delay:.3,ease:'power4.out'});
+}
+
+function S19(){show('s19',()=>{
+  runCanvas('c19','red-particles');
+  G.fromTo('#s19-r1',{opacity:0,scale:.3},{opacity:1,scale:1,duration:.6,ease:'back.out(2)'});
+  G.fromTo('#s19-r2',{opacity:0,scale:.5},{opacity:1,scale:1,duration:.5,delay:.15,ease:'back.out(2)'});
+  G.fromTo('#s19-r3',{opacity:0,scale:.7},{opacity:1,scale:1,duration:.4,delay:.25,ease:'back.out(2)'});
+});}
+function S19b(){
+  G.fromTo('#s19-mw',{opacity:0,scale:1.5},{opacity:1,scale:1,duration:.5,ease:'power4.out'});
+  doFlash('red',.22);
+  G.delayedCall(.3,()=>doFlash('white',.08));
+}
+
+function S20(){show('s20',()=>{
+  runCanvas('c20','grid');
+  G.fromTo('#s20-fw',{opacity:0,scale:.7},{opacity:1,scale:1,duration:.5,ease:'back.out(2)'});
+});}
+function S20b(){
+  G.fromTo('#s20-fs',{opacity:0,y:30},{opacity:1,y:0,duration:.45,delay:.2,ease:'power3.out'});
+}
+
+function S21(){show('s21',()=>{
+  runCanvas('c21','warm');
+  G.fromTo('#s21-label',{opacity:0,x:-40},{opacity:1,x:0,duration:.32,ease:'power3.out'});
+});}
+function S21b(){
+  G.fromTo('#s21-main',{opacity:0,x:80,scale:1.08},{opacity:1,x:0,scale:1,duration:.55,ease:'back.out(2)'});
+  doFlash('red',.1);
+}
+
+function S22(){show('s22',()=>{
+  runCanvas('c22','bone-particles');
+  G.fromTo('#s22-line',{opacity:0,y:20},{opacity:1,y:0,duration:.5,ease:'power2.out'});
+});}
+function S22b(){}
+
+function S23(){show('s23',()=>{
+  runCanvas('c23','warm');
+  G.fromTo('#s23-line',{opacity:0,x:-40},{opacity:1,x:0,duration:.6,ease:'power3.out'});
+});}
+function S23b(){}
+
+function S24(){show('s24',()=>{
+  runCanvas('c24','warm');
+  G.fromTo('#s24-line',{opacity:0,y:40},{opacity:1,y:0,duration:.7,ease:'power3.out'});
+});}
+function S24b(){
+  G.fromTo('#s24-gold',{opacity:0,scale:.9},{opacity:1,scale:1,duration:.5,delay:.3,ease:'back.out(2)'});
+}
+
+// ═══════════════════════════════════════════
+// CUE TABLE — S+Sb two-wave timing
+// ═══════════════════════════════════════════
+const CUES=[
+  {at:1.0, fn:S1},{at:2.5, fn:S1b},
+  {at:4.2, fn:S2},{at:5.5, fn:S2b},
+  {at:7.0, fn:S3},{at:8.3, fn:S3b},
+  {at:9.5, fn:S4},{at:11.0,fn:S4b},
+  {at:12.8,fn:S5},{at:14.4,fn:S5b},
+  {at:16.6,fn:S6},{at:18.2,fn:S6b},
+  {at:20.5,fn:S7},{at:21.5,fn:S7b},
+  {at:22.5,fn:S8},{at:23.6,fn:S8b},
+  {at:24.6,fn:S9},{at:25.8,fn:S9b},
+  {at:27.1,fn:S10},{at:28.8,fn:S10b},
+  {at:31.5,fn:S11},{at:33.5,fn:S11b},
+  {at:37.8,fn:S12},{at:39.2,fn:S12b},
+  {at:40.7,fn:S13},{at:42.2,fn:S13b},
+  {at:44.4,fn:S14},{at:46.0,fn:S14b},
+  {at:48.7,fn:S15},{at:50.5,fn:S15b},
+  {at:53.4,fn:S16},{at:55.8,fn:S16b},
+  {at:59.1,fn:S17},{at:61.0,fn:S17b},
+  {at:65.2,fn:S18},{at:67.0,fn:S18b},
+  {at:68.5,fn:S19},{at:70.2,fn:S19b},
+  {at:71.8,fn:S20},{at:73.8,fn:S20b},
+  {at:76.4,fn:S21},{at:78.2,fn:S21b},
+  {at:80.4,fn:S22},{at:82.5,fn:S22b},
+  {at:87.1,fn:S23},{at:89.5,fn:S23b},
+  {at:93.9,fn:S24},{at:96.5,fn:S24b},
+];
+
+// ── Audio Sync ──
+let started=false,lastCue=-1,isScrubbing=false;
+function checkCues(){
+  const t=vocal.currentTime;
+  for(let i=CUES.length-1;i>=0;i--){if(t>=CUES[i].at){if(i!==lastCue){lastCue=i;CUES[i].fn()}break}}
+}
+vocal.addEventListener('timeupdate',()=>{
+  const t=vocal.currentTime;
+  if(!isScrubbing){progress.style.setProperty('--p',(t/TOTAL*100)+'%');scrub.value=t;tcNow.textContent=fmt(t);tcEl.textContent=fmt(t)+' / 01:43'}
+  checkCues();
+});
+vocal.addEventListener('ended',()=>{btnPlay.textContent='⟳';const fade=()=>{if(bgm.volume>.005){bgm.volume-=.008;requestAnimationFrame(fade)}else{bgm.pause();bgm.volume=0}};fade()});
+
+function startShow(){
+  if(started)return;started=true;lastCue=0;
+  if(overlay){overlay.style.opacity='0';setTimeout(function(){if(overlay.parentNode)overlay.remove()},400)}
+  chrome.classList.add('on');ctrls.classList.add('on');
+  vocal.currentTime=0;vocal.muted=false;vocal.volume=0.85;
+  bgm.currentTime=0;bgm.volume=0;
+  bgm.play().then(function(){var v=0;function step(){v+=.008;if(v<.18){bgm.volume=v;requestAnimationFrame(step)}else{bgm.volume=.18}}step()}).catch(function(){});
+  vocal.play().catch(function(){});
+  S1();
+}
+
+btnPlay.addEventListener('click',e=>{e.stopPropagation();
+  if(!started){startShow();return}
+  if(vocal.paused){vocal.play();bgm.play();btnPlay.textContent='⏸'}else{vocal.pause();bgm.pause();btnPlay.textContent='▶'}
+});
+scrub.addEventListener('input',()=>{isScrubbing=true;vocal.currentTime=scrub.value;progress.style.setProperty('--p',(scrub.value/TOTAL*100)+'%');tcNow.textContent=fmt(scrub.value);tcEl.textContent=fmt(scrub.value)+' / 01:43'});
+scrub.addEventListener('change',()=>{isScrubbing=false;lastCue=-1;checkCues()});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();
+    if(!started){startShow();return}
+    if(vocal.paused){vocal.play();bgm.play();btnPlay.textContent='⏸'}else{vocal.pause();bgm.pause();btnPlay.textContent='▶'}
+  }
+  if(e.code==='ArrowLeft')vocal.currentTime=Math.max(0,vocal.currentTime-5);
+  if(e.code==='ArrowRight')vocal.currentTime=Math.min(TOTAL,vocal.currentTime+5);
+});
+S.addEventListener('click',()=>{
+  if(!started){startShow();return}
+  if(vocal.paused){vocal.play();bgm.play();btnPlay.textContent='⏸'}else{vocal.pause();bgm.pause();btnPlay.textContent='▶'}
+});
+window.addEventListener('resize',()=>{document.querySelectorAll('.shot.on canvas').forEach(c=>{c.width=c.offsetWidth;c.height=c.offsetHeight})});
+
+console.log('厌蠢 v2 — 视觉短片 · 24 场景 · 15种布局');
+document.title='V2-SUCCESS';
+}catch(e){
+  document.title='V2-ERR:'+e.message.split('\n')[0].substring(0,30);
+  var _el=document.createElement('div');_el.textContent='JS ERROR: '+e.message+'';_el.style.cssText='position:fixed;top:10%;left:50%;transform:translateX(-50%);z-index:99999;background:#ff0000;color:#fff;font:14px monospace;padding:20px;max-width:90%';document.body.appendChild(_el);
+}
+</script>
+</body>
+</html>

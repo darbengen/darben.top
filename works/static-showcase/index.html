@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>潜渡 · 作品展</title>
+  <style>
+    :root {
+      --bg:      #060B14;
+      --bg-card: #080f1c;
+      --text:    #c8d6e5;
+      --bright:  #eaf0f6;
+      --dim:     #5a7288;
+      --muted:   #3a5068;
+      --accent:  #7ec8e3;
+      --warm:    #c9a96e;
+      --line:    rgba(126,200,227,0.08);
+      --card-w:  52px;
+      --card-h:  440px;
+      --expand-w: 280px;
+      --ease-out: cubic-bezier(0.22,0.06,0.14,1);
+      --ease-spring: cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+      user-select: none; -webkit-user-select: none;
+    }
+
+    .app {
+      position: fixed; inset: 0; overflow: hidden;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 40%, rgba(126,200,227,0.04), transparent 60%),
+        radial-gradient(ellipse 50% 60% at 50% 90%, rgba(201,169,110,0.02), transparent 55%),
+        var(--bg);
+    }
+
+    /* ── Grain ── */
+    .grain {
+      position: fixed; inset: 0; z-index: 30; pointer-events: none; opacity: 0.06;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+
+    /* ── Ambient glow behind cards ── */
+    .ambient {
+      position: fixed; z-index: 0; pointer-events: none;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(126,200,227,0.04) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: left 0.6s ease, top 0.6s ease;
+    }
+
+    /* ── Cursor ── */
+    .cursor {
+      position: fixed; z-index: 80; display: none; align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border: 1px solid rgba(126,200,227,0.28); border-radius: 50%;
+      pointer-events: none; transform: translate(-50%, -50%);
+      transition: width 0.28s var(--ease-out), height 0.28s var(--ease-out),
+                  border-color 0.28s ease, background 0.28s ease;
+      mix-blend-mode: exclusion;
+    }
+    .cursor span {
+      font-size: 7px; font-weight: 600; letter-spacing: 0.08em;
+      color: rgba(126,200,227,0.0); transition: color 0.28s ease;
+    }
+    .cursor.is-fold {
+      width: 52px; height: 52px;
+      border-color: rgba(126,200,227,0.5);
+      background: rgba(126,200,227,0.06);
+    }
+    .cursor.is-fold span { color: rgba(200,214,229,0.85); }
+
+    /* ── Header ── */
+    .chrome {
+      position: fixed; inset: 38px 44px auto 46px; z-index: 40;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none;
+    }
+    .chrome > * { pointer-events: auto; }
+    .brand {
+      font-size: 14px; font-weight: 600; letter-spacing: 0.06em; color: var(--bright);
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .brand span { color: var(--accent); }
+    .about-btn {
+      font-size: 12px; font-weight: 500; letter-spacing: 0.05em; color: var(--dim);
+      transition: color 0.3s ease; font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .about-btn:hover { color: var(--accent); }
+
+    /* ── Viewport ── */
+    .viewport {
+      position: absolute; top: 50%; left: 0; width: 100%; height: var(--card-h);
+      transform: translateY(-50%); overflow: hidden;
+    }
+    .album-row {
+      display: flex; height: 100%; will-change: transform;
+    }
+
+    /* ── Card slot ── */
+    .photo-card {
+      flex: 0 0 var(--card-w); height: 100%; position: relative;
+    }
+
+    /* ── Card surface ── */
+    .card-inner {
+      position: absolute; top: 0; left: 0;
+      width: var(--card-w); height: 100%;
+      border-radius: 5px; overflow: hidden;
+      transition: width 0.55s var(--ease-out),
+                  box-shadow 0.55s ease,
+                  border-radius 0.55s var(--ease-out);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      z-index: 1;
+      border: 1px solid rgba(126,200,227,0.06);
+    }
+    .photo-card.is-expanded .card-inner {
+      width: var(--expand-w);
+      border-radius: 6px;
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(126,200,227,0.1),
+        0 0 40px rgba(126,200,227,0.04);
+      z-index: 10;
+    }
+
+    /* ── Card art ── */
+    .card-art {
+      position: absolute; inset: 0;
+      transition: transform 0.55s var(--ease-out);
+    }
+    .photo-card.is-expanded .card-art { transform: scale(1.025); }
+
+    /* ── Fold shadows ── */
+    .card-fold {
+      position: absolute; inset: 0; z-index: 2; pointer-events: none;
+      background:
+        linear-gradient(90deg,
+          rgba(6,11,20,0.7) 0%,
+          rgba(6,11,20,0.5) 10%,
+          transparent 24%,
+          transparent 76%,
+          rgba(6,11,20,0.6) 90%,
+          rgba(6,11,20,0.8) 100%
+        );
+      transition: opacity 0.45s ease;
+    }
+    .photo-card.is-expanded .card-fold { opacity: 0.08; }
+
+    .card-crease {
+      position: absolute; top: 0; bottom: 0; left: 50%; width: 0.5px; z-index: 3;
+      pointer-events: none;
+      background: rgba(126,200,227,0.05);
+      box-shadow: -0.5px 0 2px rgba(0,0,0,0.15), 0.5px 0 2px rgba(0,0,0,0.15);
+      transform: translateX(-50%);
+      transition: opacity 0.35s ease;
+    }
+    .photo-card.is-expanded .card-crease { opacity: 0; }
+
+    /* ── Card label ── */
+    .card-label {
+      position: absolute; left: 16px; bottom: 18px; z-index: 4;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.4s ease 0.08s, transform 0.4s var(--ease-out) 0.08s;
+      white-space: nowrap;
+    }
+    .photo-card.is-expanded .card-label { opacity: 1; transform: translateY(0); }
+    .card-label .num {
+      display: block; font-size: 30px; font-weight: 700; line-height: 0.85;
+      color: var(--bright); letter-spacing: -0.02em; margin-bottom: 3px;
+      font-family: "Georgia","Times New Roman",serif;
+    }
+    .card-label .title {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.04em;
+      color: rgba(126,200,227,0.7);
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+
+    /* ── Counter ── */
+    .counter {
+      position: fixed; bottom: 44px; left: 50%; z-index: 20; transform: translateX(-50%);
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: 13px; font-weight: 500; letter-spacing: 0.03em;
+    }
+    .counter .n {
+      color: var(--bright); font-size: 15px; font-weight: 600;
+      font-family: "Georgia","Times New Roman",serif;
+    }
+    .counter .of { color: var(--dim); }
+    .counter .t {
+      margin-left: 12px; color: var(--accent); font-weight: 400;
+      font-size: 12px; letter-spacing: 0.05em;
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+      opacity: 0.7; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* ── Divider line ── */
+    .stage::before {
+      content: ""; position: fixed; left: 46px; right: 44px; top: 50%;
+      height: 1px; z-index: -1;
+      background: linear-gradient(90deg,transparent,rgba(126,200,227,0.04) 20%,rgba(126,200,227,0.04) 80%,transparent);
+      pointer-events: none;
+    }
+
+    /* ── About Panel ── */
+    .about-panel, .detail {
+      position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0;
+      background: rgba(6,11,20,0.94); backdrop-filter: blur(32px);
+      -webkit-backdrop-filter: blur(32px);
+      transition: opacity 0.45s ease;
+    }
+    .about-panel.is-open, .detail.is-open { pointer-events: auto; opacity: 1; }
+    .about-panel {
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 8vw 10vw;
+    }
+    .about-panel .label {
+      font-size: 12px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em;
+      margin-bottom: 22px; font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .about-panel h1 {
+      font-size: clamp(32px, 6vw, 80px); font-weight: 700; line-height: 0.94;
+      color: var(--bright); letter-spacing: -0.02em; max-width: 640px;
+      font-family: "Georgia","Times New Roman",serif;
+    }
+    .about-panel p {
+      margin-top: 24px; max-width: 420px;
+      font-size: 15px; font-weight: 400; line-height: 1.7; color: var(--dim);
+    }
+    .close-about, .close-detail {
+      position: absolute; top: 40px; right: 46px; z-index: 4;
+      font-size: 12px; font-weight: 500; color: var(--dim); letter-spacing: 0.04em;
+      transition: color 0.3s ease;
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .close-about:hover, .close-detail:hover { color: var(--accent); }
+
+    /* ── Detail Panel ── */
+    .detail {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6vw; align-items: center; padding: 7vw;
+    }
+    .wipe {
+      position: absolute; inset: 0; z-index: 1; background: var(--accent);
+      transform: scaleX(0); transform-origin: left;
+    }
+    .detail.is-open .wipe { animation: wipe 0.8s cubic-bezier(0.76,0,0.24,1) both; }
+    .detail-copy, .detail-visual { position: relative; z-index: 2; }
+    .detail-copy .label {
+      font-size: 12px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em;
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .detail-copy h2 {
+      margin: 12px 0 16px; font-size: clamp(28px, 4vw, 60px);
+      font-weight: 700; line-height: 0.94; letter-spacing: -0.02em;
+      color: var(--bright);
+      font-family: "Georgia","Times New Roman",serif;
+    }
+    .detail-copy p {
+      font-size: 15px; font-weight: 400; line-height: 1.7; color: var(--dim); max-width: 360px;
+    }
+    .detail-facts {
+      display: flex; gap: 30px; margin-top: 28px;
+      font-size: 11px; font-weight: 500; color: var(--dim); letter-spacing: 0.04em;
+      font-family: "SF Mono","Menlo","Consolas",monospace;
+    }
+    .detail-facts strong {
+      display: block; margin-top: 4px; font-weight: 500; color: var(--bright); font-size: 13px;
+    }
+    .detail-visual {
+      height: min(56vh, 500px); border-radius: 8px; overflow: hidden;
+      border: 1px solid rgba(126,200,227,0.06);
+      box-shadow: 0 0 0 1px rgba(126,200,227,0.03), 0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    @keyframes wipe {
+      0% { transform: scaleX(0); transform-origin: left; }
+      45% { transform: scaleX(1); transform-origin: left; }
+      55% { transform: scaleX(1); transform-origin: right; }
+      100% { transform: scaleX(0); transform-origin: right; }
+    }
+
+    @media (max-width: 760px) {
+      :root { --card-w: 40px; --card-h: 320px; --expand-w: 200px; }
+      .chrome { inset: 20px 18px auto; }
+      .cursor { display: none !important; }
+      .counter { left: 18px; transform: none; bottom: 28px; }
+      .counter .t { max-width: 100px; }
+      .stage::before { left: 18px; right: 16px; }
+      .detail { grid-template-columns: 1fr; padding: 70px 18px 24px; }
+      .close-about, .close-detail { right: 18px; top: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="ambient" id="ambient" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="cursor" id="cursor" aria-hidden="true"><span id="cursorText">OPEN</span></div>
+
+    <header class="chrome">
+      <div class="brand"><span>潜渡</span> · 作品展</div>
+      <button class="about-btn" id="aboutBtn">关于</button>
+    </header>
+
+    <main class="stage">
+      <div class="viewport" id="viewport">
+        <div class="album-row" id="albumRow"></div>
+      </div>
+
+      <div class="counter" id="counter">
+        <span class="n" id="countNum">01</span>
+        <span class="of">/ 20</span>
+        <span class="t" id="countTitle">Biolume</span>
+      </div>
+    </main>
+
+    <section class="about-panel" id="aboutPanel" aria-hidden="true">
+      <button class="close-about" id="closeAbout">Close</button>
+      <p class="label">ABOUT</p>
+      <h1>折叠是意图。<br>展开是注视。</h1>
+      <p>视觉研究档案。每张卡片存有一项研究——折叠时只见一隙，展开后呈现完整构图。滚动、悬停、点击。</p>
+    </section>
+
+    <section class="detail" id="detail" aria-hidden="true">
+      <div class="wipe" aria-hidden="true"></div>
+      <button class="close-detail" id="closeDetail">Close</button>
+      <div class="detail-copy">
+        <p class="label" id="detailIndex">Study 01</p>
+        <h2 id="detailTitle">Biolume</h2>
+        <p id="detailDesc">深海中的一簇光点，悬浮在黑暗里。每一点都是独立的生命信号。</p>
+        <div class="detail-facts">
+          <span>类型 <strong id="detailType">视觉研究</strong></span>
+          <span>媒介 <strong id="detailRole">创意指导</strong></span>
+          <span>年份 <strong id="detailYear">2026</strong></span>
+        </div>
+      </div>
+      <div class="detail-visual" id="detailVisual"></div>
+    </section>
+  </div>
+
+  <script>
+    // ─── Card presets — deep sea visual system ────────────────
+    // Each card is a unique abstract composition within the deep-sea palette
+    // g=gradient, spark=scattered luminous dots, glow=large soft glow, geo=geometric element
+    const presets = [
+      // 01 Biolume — scattered cyan dots on deep navy
+      { g: "linear-gradient(170deg, #040d1a 0%, #061220 40%, #040a14 100%)",
+        glow: { x:48, y:22, s:140, c:"rgba(126,200,227,0.07)" },
+        spark: { dots:18, x0:10, x1:90, y0:10, y1:80, r:1.5, c:"rgba(126,200,227,0.35)" } },
+      // 02 Abyss Drop — deep gradient with single strong glow
+      { g: "linear-gradient(162deg, #020810 0%, #051020 50%, #030c18 100%)",
+        glow: { x:55, y:40, s:180, c:"rgba(126,200,227,0.09)" },
+        spark: { dots:8, x0:30, x1:70, y0:25, y1:55, r:2, c:"rgba(126,200,227,0.4)" } },
+      // 03 Thermal — warm gold deep in the blue
+      { g: "linear-gradient(155deg, #040a16 0%, #061020 45%, #050c18 100%)",
+        glow: { x:40, y:65, s:120, c:"rgba(201,169,110,0.06)" },
+        spark: { dots:12, x0:15, x1:80, y0:40, y1:90, r:1.3, c:"rgba(201,169,110,0.3)" } },
+      // 04 Light Shaft — diagonal light beam
+      { g: "linear-gradient(135deg, #030a16 0%, #071222 55%, #040b18 100%)",
+        glow: { x:35, y:15, s:200, c:"rgba(126,200,227,0.05)" },
+        geo: { type:"stripe", angle:38, w:30, c:"rgba(126,200,227,0.03)" } },
+      // 05 Plankton Field — dense tiny particles
+      { g: "linear-gradient(168deg, #050c18 0%, #040d1a 50%, #060e1c 100%)",
+        spark: { dots:35, x0:5, x1:95, y0:5, y1:95, r:1, c:"rgba(126,200,227,0.25)" },
+        glow: { x:60, y:50, s:100, c:"rgba(126,200,227,0.04)" } },
+      // 06 Depth Marker — geometric ring
+      { g: "linear-gradient(158deg, #020810 0%, #06101e 45%, #040c16 100%)",
+        glow: { x:50, y:50, s:160, c:"rgba(126,200,227,0.05)" },
+        geo: { type:"ring", cx:50, cy:50, r:35, sw:1.2, c:"rgba(126,200,227,0.08)" } },
+      // 07 Cold Vent — blue-white bloom from bottom
+      { g: "linear-gradient(175deg, #030b16 0%, #050e1c 50%, #061222 100%)",
+        glow: { x:50, y:88, s:160, c:"rgba(126,200,227,0.08)" },
+        spark: { dots:14, x0:20, x1:80, y0:55, y1:95, r:1.4, c:"rgba(180,215,235,0.3)" } },
+      // 08 Golden Vein — warm gold diagonal thread
+      { g: "linear-gradient(165deg, #040a14 0%, #050f1c 48%, #030914 100%)",
+        glow: { x:30, y:30, s:90, c:"rgba(201,169,110,0.05)" },
+        geo: { type:"stripe", angle:-42, w:16, c:"rgba(201,169,110,0.04)" } },
+      // 09 Pressure Ring — concentric circles
+      { g: "linear-gradient(160deg, #030914 0%, #060f1c 50%, #040b16 100%)",
+        spark: { dots:4, x0:35, x1:65, y0:35, y1:65, r:2.5, c:"rgba(126,200,227,0.5)" },
+        geo: { type:"ring", cx:50, cy:48, r:25, sw:0.8, c:"rgba(126,200,227,0.06)" } },
+      // 10 Midnight Zone — near-black with rare bright dots
+      { g: "linear-gradient(172deg, #01060c 0%, #030d18 50%, #020810 100%)",
+        spark: { dots:6, x0:15, x1:85, y0:15, y1:75, r:2, c:"rgba(126,200,227,0.55)" },
+        glow: { x:70, y:25, s:80, c:"rgba(126,200,227,0.04)" } },
+      // 11 Crystal — angular light refraction
+      { g: "linear-gradient(145deg, #030a14 0%, #071120 50%, #040c18 100%)",
+        glow: { x:55, y:35, s:130, c:"rgba(160,210,235,0.06)" },
+        geo: { type:"diamond", cx:50, cy:45, s:30, c:"rgba(126,200,227,0.06)" } },
+      // 12 Ocean Floor — warm from below, cool above
+      { g: "linear-gradient(180deg, #030b16 0%, #050f1c 60%, #081420 100%)",
+        glow: { x:50, y:90, s:180, c:"rgba(201,169,110,0.04)" },
+        spark: { dots:10, x0:10, x1:90, y0:70, y1:98, r:1.2, c:"rgba(201,169,110,0.2)" } },
+      // 13 Biolume Swarm — cluster of cyan dots
+      { g: "linear-gradient(163deg, #040c18 0%, #030a14 55%, #050e1a 100%)",
+        spark: { dots:25, x0:30, x1:70, y0:20, y1:60, r:1.2, c:"rgba(126,200,227,0.35)" },
+        glow: { x:48, y:38, s:100, c:"rgba(126,200,227,0.06)" } },
+      // 14 Hadal — extreme depth, minimal light
+      { g: "linear-gradient(170deg, #02060c 0%, #030a14 50%, #01050a 100%)",
+        spark: { dots:3, x0:25, x1:75, y0:30, y1:60, r:2.5, c:"rgba(126,200,227,0.6)" } },
+      // 15 Surface Light — light penetrating from above
+      { g: "linear-gradient(180deg, #0a1828 0%, #05101e 30%, #030a14 100%)",
+        glow: { x:48, y:5, s:220, c:"rgba(126,200,227,0.1)" },
+        spark: { dots:16, x0:5, x1:95, y0:5, y1:40, r:1, c:"rgba(180,215,235,0.2)" } },
+      // 16 Rift — crack of light in darkness
+      { g: "linear-gradient(155deg, #02080e 0%, #040d1a 50%, #030a12 100%)",
+        glow: { x:50, y:55, s:100, c:"rgba(126,200,227,0.08)" },
+        geo: { type:"stripe", angle:2, w:3, c:"rgba(126,200,227,0.1)" } },
+      // 17 Current — flowing particles
+      { g: "linear-gradient(167deg, #040a14 0%, #060e1a 48%, #030914 100%)",
+        spark: { dots:20, x0:5, x1:95, y0:20, y1:80, r:1.1, c:"rgba(126,200,227,0.28)" } },
+      // 18 Twilight Zone — transition from blue to gold
+      { g: "linear-gradient(175deg, #060e1c 0%, #040d18 45%, #060f1a 100%)",
+        glow: { x:35, y:30, s:130, c:"rgba(126,200,227,0.05)" },
+        glow2:{ x:65, y:70, s:90, c:"rgba(201,169,110,0.04)" } },
+      // 19 Echo — repeating faint rings
+      { g: "linear-gradient(162deg, #030a14 0%, #050e1c 52%, #040b16 100%)",
+        geo: { type:"ring", cx:50, cy:48, r:18, sw:0.6, c:"rgba(126,200,227,0.07)" },
+        geo2:{ type:"ring", cx:50, cy:48, r:32, sw:0.4, c:"rgba(126,200,227,0.04)" } },
+      // 20 Specimen — contained glow with border
+      { g: "linear-gradient(158deg, #040b16 0%, #030a14 50%, #050d18 100%)",
+        glow: { x:50, y:48, s:110, c:"rgba(126,200,227,0.07)" },
+        geo: { type:"diamond", cx:50, cy:48, s:25, c:"rgba(126,200,227,0.08)" },
+        spark: { dots:5, x0:35, x1:65, y0:35, y1:65, r:1.8, c:"rgba(126,200,227,0.45)" } },
+    ];
+
+    const titles = [
+      "Biolume","Abyss Drop","Thermal","Light Shaft","Plankton Field",
+      "Depth Marker","Cold Vent","Golden Vein","Pressure Ring","Midnight Zone",
+      "Crystal","Ocean Floor","Swarm","Hadal","Surface Light",
+      "Rift","Current","Twilight Zone","Echo","Specimen"
+    ];
+    const CARD_COUNT = titles.length;
+    const SETS = 3;
+    const TOTAL = CARD_COUNT * SETS;
+    const SPEED = 20;
+    const CARD_W = 52;
+    const SET_W = CARD_COUNT * CARD_W;
+
+    // ─── DOM ──────────────────────────────────────────────
+    const albumRow = document.querySelector("#albumRow");
+    const viewport = document.querySelector("#viewport");
+    const countNum = document.querySelector("#countNum");
+    const countTitle = document.querySelector("#countTitle");
+    const detail = document.querySelector("#detail");
+    const detailTitle = document.querySelector("#detailTitle");
+    const detailDesc = document.querySelector("#detailDesc");
+    const detailIndex = document.querySelector("#detailIndex");
+    const detailType = document.querySelector("#detailType");
+    const detailRole = document.querySelector("#detailRole");
+    const detailYear = document.querySelector("#detailYear");
+    const detailVisual = document.querySelector("#detailVisual");
+    const closeDetail = document.querySelector("#closeDetail");
+    const aboutPanel = document.querySelector("#aboutPanel");
+    const aboutBtn = document.querySelector("#aboutBtn");
+    const closeAbout = document.querySelector("#closeAbout");
+    const cursorEl = document.querySelector("#cursor");
+    const cursorText = document.querySelector("#cursorText");
+    const ambient = document.querySelector("#ambient");
+
+    // ─── Helper: render a card's art composition ──────────
+    function cardArtHTML(p) {
+      let layers = `<div class="card-grad" style="position:absolute;inset:0;background:${p.g}"></div>`;
+
+      // Glow blobs
+      if (p.glow) {
+        layers += `<div style="position:absolute;left:${p.glow.x}%;top:${p.glow.y}%;width:${p.glow.s}px;height:${p.glow.s}px;background:${p.glow.c};filter:blur(40px);transform:translate(-50%,-50%);border-radius:50%"></div>`;
+      }
+      if (p.glow2) {
+        layers += `<div style="position:absolute;left:${p.glow2.x}%;top:${p.glow2.y}%;width:${p.glow2.s}px;height:${p.glow2.s}px;background:${p.glow2.c};filter:blur(40px);transform:translate(-50%,-50%);border-radius:50%"></div>`;
+      }
+
+      // Scattered luminous dots
+      if (p.spark) {
+        const s = p.spark;
+        for (let i = 0; i < s.dots; i++) {
+          const x = s.x0 + Math.random() * (s.x1 - s.x0);
+          const y = s.y0 + Math.random() * (s.y1 - s.y0);
+          const r = s.r * (0.5 + Math.random());
+          const o = 0.15 + Math.random() * 0.55;
+          layers += `<div style="position:absolute;left:${x}%;top:${y}%;width:${r}px;height:${r}px;background:${s.c};opacity:${o};border-radius:50%;filter:blur(${r<1.5?0:1}px)"></div>`;
+        }
+      }
+
+      // Geometric elements
+      if (p.geo) {
+        const g = p.geo;
+        if (g.type === "stripe") {
+          layers += `<div style="position:absolute;inset:0;background:linear-gradient(${g.angle}deg,transparent 0%,${g.c} 48%,${g.c} 52%,transparent 100%);width:${g.w}%;left:${50-g.w/2}%"></div>`;
+        } else if (g.type === "ring") {
+          layers += `<div style="position:absolute;left:${g.cx}%;top:${g.cy}%;width:${g.r*2}%;height:${g.r*2}%;transform:translate(-50%,-50%);border-radius:50%;border:${g.sw}px solid ${g.c}"></div>`;
+        } else if (g.type === "diamond") {
+          layers += `<div style="position:absolute;left:${g.cx}%;top:${g.cy}%;width:${g.s}px;height:${g.s}px;transform:translate(-50%,-50%) rotate(45deg);border:1px solid ${g.c}"></div>`;
+        }
+      }
+      if (p.geo2) {
+        const g = p.geo2;
+        if (g.type === "ring") {
+          layers += `<div style="position:absolute;left:${g.cx}%;top:${g.cy}%;width:${g.r*2}%;height:${g.r*2}%;transform:translate(-50%,-50%);border-radius:50%;border:${g.sw}px solid ${g.c}"></div>`;
+        }
+      }
+
+      return layers;
+    }
+
+    // ─── Build cards ──────────────────────────────────────
+    const cards = [];
+    const cardSeeds = []; // store random seeds for consistent rendering
+    for (let s = 0; s < SETS; s++)
+      for (let i = 0; i < CARD_COUNT; i++) {
+        const p = presets[i];
+        const el = document.createElement("div");
+        el.className = "photo-card";
+        el.dataset.logical = String(i);
+        // Use consistent random seed per card index
+        const seed = i * 137 + s * 251;
+        const oldRand = Math.random;
+        let seedCtr = seed;
+        Math.random = function() { seedCtr = (seedCtr * 16807) % 2147483647; return (seedCtr - 1) / 2147483646; };
+
+        el.innerHTML = `
+          <div class="card-inner">
+            <div class="card-art">${cardArtHTML(p)}</div>
+            <div class="card-fold"></div>
+            <div class="card-crease"></div>
+            <div class="card-label">
+              <span class="num">${String(i+1).padStart(2,"0")}</span>
+              <span class="title">${titles[i]}</span>
+            </div>
+          </div>`;
+        Math.random = oldRand;
+        albumRow.appendChild(el);
+        cards.push(el);
+        cardSeeds.push(i);
+      }
+
+    // ─── State ────────────────────────────────────────────
+    let offset = SET_W, target = offset;
+    let hovered = -1, auto = true, timer = null;
+    let last = performance.now();
+    let drag = false, dsx = 0, dso = 0, dm = 0;
+    let psx = 0, psy = 0, pi = -1;
+
+    function centerIdx() {
+      return (((Math.floor((offset + innerWidth / 2) / CARD_W) % CARD_COUNT) + CARD_COUNT) % CARD_COUNT);
+    }
+    function updateMeta() {
+      const i = centerIdx();
+      countNum.textContent = String(i + 1).padStart(2, "0");
+      countTitle.textContent = titles[i];
+    }
+    function wrap() {
+      while (offset >= SET_W * 2) offset -= SET_W;
+      while (offset < SET_W) offset += SET_W;
+    }
+
+    function loop(now) {
+      const dt = Math.min(160, now - last) / 1000; last = now;
+      if (auto && !drag && hovered === -1) offset += SPEED * dt;
+      if (!auto && hovered === -1 && !drag) {
+        offset += (target - offset) * 0.07;
+        if (Math.abs(target - offset) < 0.12) { offset = target; auto = true; }
+      }
+      wrap();
+      albumRow.style.transform = `translateX(${-offset}px)`;
+      updateMeta();
+      requestAnimationFrame(loop);
+    }
+
+    // ─── Hover ────────────────────────────────────────────
+    albumRow.addEventListener("pointermove", e => {
+      if (drag) return;
+      const c = document.elementFromPoint(e.clientX, e.clientY)?.closest(".photo-card");
+      if (c) {
+        const idx = cards.indexOf(c);
+        if (idx !== hovered) {
+          if (hovered >= 0) cards[hovered].classList.remove("is-expanded");
+          hovered = idx; c.classList.add("is-expanded"); auto = false;
+          cursorEl.classList.add("is-fold"); cursorText.textContent = "VIEW";
+          clearTimeout(timer);
+        }
+      } else if (hovered >= 0) { clearHover(); }
+    });
+    albumRow.addEventListener("pointerleave", () => { if (hovered >= 0) clearHover(); });
+
+    function clearHover() {
+      if (hovered >= 0) { cards[hovered].classList.remove("is-expanded"); hovered = -1; }
+      cursorEl.classList.remove("is-fold"); cursorText.textContent = "OPEN";
+      timer = setTimeout(() => { auto = true; }, 500);
+    }
+
+    // ─── Drag ─────────────────────────────────────────────
+    albumRow.addEventListener("pointerdown", e => {
+      drag = true; dsx = e.clientX; dso = offset; dm = 0;
+      psx = e.clientX; psy = e.clientY;
+      pi = cards.indexOf(document.elementFromPoint(e.clientX, e.clientY)?.closest(".photo-card"));
+      clearHover();
+    });
+    window.addEventListener("pointermove", e => {
+      cursorEl.style.left = e.clientX + "px";
+      cursorEl.style.top = e.clientY + "px";
+      ambient.style.left = e.clientX + "px";
+      ambient.style.top = e.clientY + "px";
+      if (!drag) return;
+      dm = Math.max(dm, Math.abs(e.clientX - dsx));
+      offset = dso - (e.clientX - dsx); auto = false; clearTimeout(timer);
+    });
+    window.addEventListener("pointerup", e => {
+      if (!drag) return; drag = false;
+      if (Math.hypot(e.clientX - psx, e.clientY - psy) <= 4 && dm <= 4 && pi >= 0)
+        openDetail(parseInt(cards[pi].dataset.logical));
+      pi = -1; timer = setTimeout(() => { auto = true; }, 700);
+    });
+
+    // ─── Wheel ────────────────────────────────────────────
+    viewport.addEventListener("wheel", e => {
+      e.preventDefault();
+      if (detail.classList.contains("is-open")) { closeDetailFn(); return; }
+      clearHover(); auto = false; clearTimeout(timer);
+      target += e.deltaY * 1.5;
+      timer = setTimeout(() => { auto = true; }, 700);
+    }, { passive: false });
+
+    // ─── Keys ─────────────────────────────────────────────
+    window.addEventListener("keydown", e => {
+      if (e.key === "Escape") { closeDetailFn(); closeAboutFn(); }
+      if (e.key === "ArrowRight") { clearHover(); auto = false; target += 140; clearTimeout(timer); timer = setTimeout(() => { auto = true; }, 700); }
+      if (e.key === "ArrowLeft")  { clearHover(); auto = false; target -= 140; clearTimeout(timer); timer = setTimeout(() => { auto = true; }, 700); }
+    });
+
+    // ─── About ────────────────────────────────────────────
+    aboutBtn.addEventListener("click", () => { aboutPanel.classList.add("is-open"); aboutPanel.setAttribute("aria-hidden", "false"); });
+    closeAbout.addEventListener("click", closeAboutFn);
+    function closeAboutFn() { aboutPanel.classList.remove("is-open"); aboutPanel.setAttribute("aria-hidden", "true"); }
+
+    // ─── Detail ───────────────────────────────────────────
+    closeDetail.addEventListener("click", closeDetailFn);
+    detail.addEventListener("click", e => { if (e.target === detail && detail.classList.contains("is-open")) closeDetailFn(); });
+
+    function openDetail(i) {
+      const p = presets[i];
+      detailTitle.textContent = titles[i];
+      detailDesc.textContent = "深海视觉研究。每件作品是对光线、深度与形态的一次探索——在绝对的黑暗里，最小的光点也足以定义空间。";
+      detailIndex.textContent = `Study ${String(i+1).padStart(2,"0")}`;
+      detailType.textContent = "视觉研究";
+      detailRole.textContent = "创意指导";
+      detailYear.textContent = "2026";
+
+      // Render detail visual with the card's composition, larger
+      const seed = i * 137;
+      const oldRand = Math.random;
+      let seedCtr = seed;
+      Math.random = function() { seedCtr = (seedCtr * 16807) % 2147483647; return (seedCtr - 1) / 2147483646; };
+      detailVisual.innerHTML = `
+        <div style="position:absolute;inset:0;background:${p.g};border-radius:8px;overflow:hidden;">
+          ${cardArtHTML(p)}
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:2">
+            <span style="font-size:80px;font-weight:700;color:rgba(126,200,227,0.04);letter-spacing:-0.03em;font-family:Georgia,serif">${String(i+1).padStart(2,"0")}</span>
+          </div>
+        </div>`;
+      Math.random = oldRand;
+
+      detail.classList.add("is-open"); detail.setAttribute("aria-hidden", "false");
+    }
+    function closeDetailFn() {
+      detail.classList.remove("is-open"); detail.setAttribute("aria-hidden", "true"); detailVisual.innerHTML = "";
+    }
+
+    // ─── Init ─────────────────────────────────────────────
+    updateMeta();
+    if (!("ontouchstart" in window)) {
+      cursorEl.style.display = "flex";
+      cursorEl.style.left = innerWidth / 2 + "px";
+      cursorEl.style.top = innerHeight / 2 + "px";
+      ambient.style.left = innerWidth / 2 + "px";
+      ambient.style.top = innerHeight / 2 + "px";
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
